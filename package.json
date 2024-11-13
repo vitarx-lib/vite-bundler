@@ -13,7 +13,9 @@
   ],
   "author": "ZhuChongLin <8210856@qq.com>",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "push": "npm publish"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
