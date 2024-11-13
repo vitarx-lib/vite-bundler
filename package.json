@@ -1,9 +1,8 @@
 {
   "name": "@vitarx/vite-plugin-vitarx",
-  "private": false,
   "version": "0.0.1",
   "description": "VitePluginVitarx 是一个 Vite 插件，用于构建 Vitarx 应用。",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/types/index.d.ts",
   "main": "dist/index.js",
   "license": "MIT",
   "keywords": [
@@ -15,13 +14,17 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "push": "npm publish"
+    "push": "npm publish --access=public"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
     "prettier": "^3.3.3",
     "typescript": "^5.6.2",
     "vite": "^5.4.11"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "files": [
     "dist",
