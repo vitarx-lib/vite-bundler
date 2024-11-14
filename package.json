@@ -2,7 +2,7 @@
   "name": "@vitarx/vite-plugin-vitarx",
   "version": "0.0.1",
   "description": "VitePluginVitarx 是一个 Vite 插件，用于构建 Vitarx 应用。",
-  "types": "./dist/types/index.d.ts",
+  "types": "./dist/index.d.ts",
   "main": "dist/index.js",
   "type": "module",
   "license": "MIT",
