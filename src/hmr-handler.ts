@@ -6,11 +6,14 @@ import { type ParseResult, types as t, parseSync } from '@babel/core'
 export enum HmrId {
   hmr = '__$hmr$__',
   vnode = '__$vnode$__',
-  state = '__$state$__'
+  state = '__$state$__',
+  manager = '__$ManageHmr$__',
+  register = '__$ManageHmr$__.register'
 }
 
-let createHmrReloadHandlerCache: t.IfStatement | null = null
 let createVNodeDeclarationCache: t.VariableDeclaration | null = null
+let createHmrHandlerCache: t.Statement[] | null = null
+let createHmrRegisterHandlerCache: t.CallExpression | null = null
 
 /**
  * 检查是否已经存在指定的 import 语句
@@ -46,6 +49,62 @@ export function hasImport(ast: t.File, moduleName: string, importNames: string[]
 }
 
 /**
+ * 创建vnode变量声明语句
+ *
+ * ```ts
+ * const __$vnode$__ = getCurrentVNode()
+ * ```
+ *
+ * @returns {t.VariableDeclaration} - vnode变量声明语句
+ */
+function createVNodeDeclaration(): t.VariableDeclaration {
+  if (!createVNodeDeclarationCache) {
+    createVNodeDeclarationCache = t.variableDeclaration('const', [
+      t.variableDeclarator(
+        t.identifier(HmrId.vnode),
+        t.callExpression(t.identifier('getCurrentVNode'), [])
+      )
+    ])
+  }
+  return createVNodeDeclarationCache
+}
+
+/**
+ * 创建热更新注册处理程序
+ */
+function createHmrRegisterHandler() {
+  if (!createHmrRegisterHandlerCache) {
+    createHmrRegisterHandlerCache = t.callExpression(
+      t.memberExpression(t.identifier(HmrId.manager), t.identifier('register')),
+      [t.identifier(HmrId.vnode)]
+    )
+  }
+
+  return createHmrRegisterHandlerCache
+}
+
+/**
+ * 创建vnode缓存处理程序
+ */
+function createHmrHandler() {
+  if (createHmrHandlerCache) return createHmrHandlerCache
+  const code = `
+  const ${HmrId.manager} = new ${HmrId.hmr}.ModuleManager()
+  import.meta.hot.accept(mod => {
+    const message = ${HmrId.manager}.cannotHandleUpdate(mod)
+    if (message) {
+      import.meta.hot.invalidate(message)
+    } else {
+      ${HmrId.manager}.update(mod)
+    }
+  })
+`
+  const parsed = parseSync(code)
+  // 提取if节点
+  return (createHmrHandlerCache = parsed!.program.body)
+}
+
+/**
  * 导入客户端热更新所需的依赖
  *
  * @param ast
@@ -53,20 +112,28 @@ export function hasImport(ast: t.File, moduleName: string, importNames: string[]
 export function importHmrClientDeps(ast: ParseResult) {
   // 如果开发环境，则添加，HMR 热更新处理所需要的依赖
   if (process.env.NODE_ENV === 'development') {
+    const injects: t.Statement[] = []
+
     // 插入 import * as __$hmr$__ from "@vitarx/vite-plugin-vitarx"
     const hmrImportStatement = t.importDeclaration(
       [t.importNamespaceSpecifier(t.identifier(HmrId.hmr))],
       t.stringLiteral('/src/hmr-client.ts') // npm run build 时会自动替换为@vitarx/vite-plugin-vitarx/hmr-client.js
     )
-    ast.program.body.unshift(hmrImportStatement)
+    injects.push(hmrImportStatement)
+
+    // 插入 import { getCurrentVNode } from 'vitarx'
     const importVitarx = hasImport(ast, 'vitarx', ['getCurrentVNode'])
     if (importVitarx.length > 0) {
       const importStatement = t.importDeclaration(
         importVitarx.map(name => t.importSpecifier(t.identifier(name), t.identifier(name))),
         t.stringLiteral('vitarx')
       )
-      ast.program.body.unshift(importStatement)
+      injects.push(importStatement)
     }
+    ast.program.body.unshift(...injects)
+
+    // 插入 vnode 缓存处理程序
+    ast.program.body.push(...createHmrHandler())
   }
 }
 
@@ -104,52 +171,13 @@ export function handleFnVariableDeclaration(statement: t.VariableDeclaration, st
 }
 
 /**
- * 创建热更新处理程序代码块
+ * 注入函数组件状态处理程序
  *
- * @returns {t.IfStatement} - 热更新处理程序代码块
+ * @param block
+ * @param states
  */
-function createHmrReloadHandler(): t.IfStatement {
-  if (createHmrReloadHandlerCache) return createHmrReloadHandlerCache
-  const code = `if (import.meta.hot) {
-  import.meta.hot.accept(mod => {
-    if (${HmrId.hmr}.cannotHandleUpdate(${HmrId.vnode}, mod)) {
-      import.meta.hot.invalidate('组件从模块中移除，无法处理热更新。')
-    } else {
-      ${HmrId.hmr}.handleHmrUpdate(${HmrId.vnode}, mod, ${HmrId.state},import.meta.url)
-    }
-  })
-}`
-  const parsed = parseSync(code)
-  if (!parsed || !parsed.program) {
-    throw new Error('Failed to parse the code')
-  }
-  // 提取if节点
-  return (createHmrReloadHandlerCache = parsed.program.body[0] as t.IfStatement)
-}
-
-/**
- * 创建vnode变量声明语句
- *
- * ```ts
- * const __$vnode$__ = getCurrentVNode()
- * ```
- *
- * @returns {t.VariableDeclaration} - vnode变量声明语句
- */
-function createVNodeDeclaration(): t.VariableDeclaration {
-  if (createVNodeDeclarationCache) return createVNodeDeclarationCache
-  createVNodeDeclarationCache = t.variableDeclaration('const', [
-    t.variableDeclarator(
-      t.identifier(HmrId.vnode),
-      t.callExpression(t.identifier('getCurrentVNode'), [])
-    )
-  ])
-  return createVNodeDeclarationCache
-}
-
-export function injectHmrCode(block: t.BlockStatement, states: Set<string>) {
+export function injectFnWidgetHmrHandler(block: t.BlockStatement, states: Set<string>) {
   if (process.env.NODE_ENV !== 'development') return
-  const injects: t.Statement[] = [createVNodeDeclaration()]
   // 动态生成状态对象 getter
   const stateProperties = Array.from(states).map(stateName => {
     return t.objectMethod(
@@ -159,13 +187,35 @@ export function injectHmrCode(block: t.BlockStatement, states: Set<string>) {
       t.blockStatement([t.returnStatement(t.identifier(stateName))])
     )
   })
-  // 写入 const __$state$__ = { ... }
-  injects.push(
-    t.variableDeclaration('const', [
-      t.variableDeclarator(t.identifier(HmrId.state), t.objectExpression(stateProperties))
-    ])
+  const stateObject = t.objectExpression(stateProperties)
+  // 创建状态对象挂载语句
+  const stateMount = t.expressionStatement(
+    t.callExpression(
+      t.memberExpression(
+        t.callExpression(t.memberExpression(t.identifier('Promise'), t.identifier('resolve')), []),
+        t.identifier('then')
+      ),
+      [
+        t.arrowFunctionExpression(
+          [],
+          t.blockStatement([
+            t.expressionStatement(
+              t.assignmentExpression(
+                '=',
+                t.memberExpression(t.identifier(HmrId.vnode), t.identifier(HmrId.state)),
+                stateObject
+              )
+            )
+          ])
+        )
+      ]
+    )
   )
-  // 写入 if (import.meta.hot) { ... }
-  injects.push(createHmrReloadHandler())
-  block.body.unshift(...injects)
+  block.body.unshift(
+    createVNodeDeclaration(),
+    createHmrRegisterHandler() as unknown as t.Statement,
+    stateMount
+  )
 }
+
+
