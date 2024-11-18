@@ -11,12 +11,9 @@ import {
 import type { ModuleNamespace } from 'vite/types/hot.js'
 
 type VNODE = VNode & {
-  __hmr_state: Record<string, any>
+  __$state$__: Record<string, any>
   instance: Widget
 }
-const ModuleWidget = new Map<string, Map<string, VNODE>>()
-
-function registerWidget(url: string, name: string) {}
 
 /**
  * 获取记录的状态
@@ -25,7 +22,7 @@ function registerWidget(url: string, name: string) {}
  * @param name
  */
 export function getState(vnode: VNODE, name: string) {
-  return vnode.__hmr_state?.[name]
+  return vnode.__$state$__?.[name]
 }
 
 /**
@@ -58,9 +55,8 @@ function getModule(name: string, mod: ModuleNamespace) {
  *
  * @param vnode
  * @param mod
- * @param state
  */
-export function handleHmrUpdate(vnode: VNODE, mod: ModuleNamespace, state: Record<string, any>) {
+export function handleHmrUpdate(vnode: VNODE, mod: ModuleNamespace) {
   // 获取组件名称
   const name = vnode.instance.widgetName
   // 旧的组件代码
@@ -69,8 +65,6 @@ export function handleHmrUpdate(vnode: VNODE, mod: ModuleNamespace, state: Recor
   // 更新过后的组件代码
   const newCode = newModule.toString()
   if (oldCode !== newCode) {
-    console.log(`更新${name}组件`)
-    vnode.__hmr_state = state
     // 更新组件代码
     vnode.type = newModule
     if (!isClassWidget(vnode.type)) {
