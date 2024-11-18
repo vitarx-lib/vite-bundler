@@ -88,7 +88,6 @@ function createHmrRegisterHandler() {
 function createHmrHandler() {
   if (createHmrHandlerCache) return createHmrHandlerCache
   const code = `
-  const ${HmrId.manager} = new ${HmrId.hmr}.ModuleManager()
   import.meta.hot.accept(mod => {
     const updateResult = ${HmrId.manager}.update(mod)
     typeof updateResult === 'string' && import.meta.hot.invalidate(updateResult)
@@ -99,6 +98,54 @@ function createHmrHandler() {
   return (createHmrHandlerCache = parsed!.program.body)
 }
 
+/**
+ * 在最后一条import语句之后插入代码
+ *
+ * @param ast
+ * @param injects
+ */
+function insertAfterLastImport(ast: ParseResult, injects: t.Statement[]): void {
+  let lastImportIndex = -1
+
+  // 找到最后一个 import 语句的位置
+  for (let i = 0; i < ast.program.body.length; i++) {
+    if (ast.program.body[i].type === 'ImportDeclaration') {
+      lastImportIndex = i
+    } else {
+      break
+    }
+  }
+  // 如果没有 import 语句，则直接插入到 body 的开头
+  if (lastImportIndex === -1) {
+    ast.program.body.unshift(...injects)
+  } else {
+    // 在最后一个 import 语句后面插入代码
+    ast.program.body.splice(lastImportIndex + 1, 0, ...injects)
+  }
+}
+
+let managerDeclarationCache: t.VariableDeclaration | null = null
+
+/**
+ * 创建模块管理器声明语句
+ *
+ * @returns {t.VariableDeclaration} - 模块管理器声明语句
+ */
+function createManagerDeclaration(): t.VariableDeclaration {
+  if (!managerDeclarationCache) managerDeclarationCache = t.variableDeclaration(
+    'const',
+    [
+      t.variableDeclarator(
+        t.identifier(HmrId.manager),
+        t.newExpression(
+          t.memberExpression(t.identifier(HmrId.hmr), t.identifier('ModuleManager')),
+          []
+        )
+      )
+    ]
+  )
+  return managerDeclarationCache
+}
 /**
  * 导入客户端热更新所需的依赖
  *
@@ -125,7 +172,8 @@ export function importHmrClientDeps(ast: ParseResult) {
     injects.push(importStatement)
   }
   ast.program.body.unshift(...injects)
-
+  // `const __$vitarx_hmr_manager$__ = new __$vitarx_vite_hmr$__.ModuleManager()`
+  insertAfterLastImport(ast, [createManagerDeclaration()])
   // 插入 vnode 缓存处理程序
   ast.program.body.push(...createHmrHandler())
 }
