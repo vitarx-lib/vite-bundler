@@ -1,16 +1,6 @@
 import { Plugin, type ResolvedConfig } from 'vite'
 import handleJsxOrTsxFileCode from './jsx-handler.js'
 
-/**
- * 判断是否需要热更新
- *
- * @param file
- */
-function isHMRUpdate(file: string) {
-  const regex = /\.(jsx?|tsx?|css|scss|sass|less|styl|pcss|postcss)$/
-  return regex.test(file)
-}
-
 export default function vitePluginVitarx(): Plugin {
   let vite_config: ResolvedConfig = {} as ResolvedConfig
   return {
