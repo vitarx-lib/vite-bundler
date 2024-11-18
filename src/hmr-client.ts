@@ -21,6 +21,7 @@ type WidgetConstructor = FnWidget | ClassWidget
 type VNODE = VNode<WidgetConstructor> & {
   __$vitarx_state$__: Record<string, any>
   instance: Widget
+  __$restore$__?: boolean
 }
 // 初始化widget缓存，配合jsxDev对引用进行更新
 !window[WidgetCache] &&
@@ -48,6 +49,23 @@ function getModule(name: string, mod: ModuleNamespace) {
 }
 
 /**
+ * 提取代码块中的return语句
+ *
+ * @param functionCode
+ */
+function extractTopLevelReturnStatements(functionCode: string) {
+  // Remove comments from the code
+  const noCommentsCode = functionCode.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
+  // Match top-level return statements
+  const regex = /(?<![\w$])return\s+[^;]+;/g
+  let match
+  const returns = []
+  while ((match = regex.exec(noCommentsCode)) !== null) {
+    returns.push(match[0])
+  }
+  return returns.join('\n')
+}
+/**
  * 处理热更新
  *
  * @param vnode
@@ -56,25 +74,39 @@ function getModule(name: string, mod: ModuleNamespace) {
 function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
   // 缓存新的组件构造函数
   window[WidgetCache].set(vnode.type, newModule)
-  // 更新虚拟节点中的组件构造函数
-  vnode.type = newModule
-  // TODO: 需完善对类组件更新
   // 销毁旧作用域
   vnode.instance.renderer.scope?.destroy()
+  const oldType = vnode.type
+  // 更新虚拟节点中的组件构造函数
+  vnode.type = newModule
   // 触发卸载钩子
   vnode.instance.onUnmounted?.()
-  if (!isClassWidget(vnode.type)) {
-    createScope(() => {
-      createFnWidget(vnode as VNode<FnWidget>).renderer
-    })
-  }
+  createScope(() => {
+    if (isClassWidget(vnode.type)) {
+      new vnode.type(vnode.props).renderer
+    } else {
+      const oldReturn = extractTopLevelReturnStatements(oldType.toString())
+      const newReturn = extractTopLevelReturnStatements(newModule.toString())
+      // return语句完全一致，则视为更新了逻辑代码，清除缓存的状态
+      if (oldReturn === newReturn) {
+        // @ts-ignore
+        delete vnode.__$vitarx_state$__
+        const newInstance = createFnWidget(vnode as VNode<FnWidget>)
+        newInstance.onCreated?.()
+        newInstance.renderer
+        newInstance.onMounted?.()
+      } else {
+        createFnWidget(vnode as VNode<FnWidget>).renderer
+      }
+    }
+  })
 }
 
 /**
- * 模块管理器
+ * 模块依赖管理器
  */
 export class ModuleManager {
-  modules: Map<string, Set<VNODE>> = new Map()
+  deps: Map<string, Set<VNODE>> = new Map()
 
   /**
    * 注册节点
@@ -83,10 +115,10 @@ export class ModuleManager {
    */
   register(vnode: VNODE) {
     const widget = vnode.type.name
-    if (this.modules.has(widget)) {
-      this.modules.get(widget)!.add(vnode)
+    if (this.deps.has(widget)) {
+      this.deps.get(widget)!.add(vnode)
     } else {
-      this.modules.set(widget, new Set([vnode]))
+      this.deps.set(widget, new Set([vnode]))
     }
   }
 
@@ -97,7 +129,7 @@ export class ModuleManager {
    */
   update(mod: ModuleNamespace | undefined) {
     if (!mod) return 'module not found'
-    for (const [name, nodes] of this.modules) {
+    for (const [name, nodes] of this.deps) {
       const newModule = getModule(name, mod)
       if (!newModule) return `${name}在模块中被移除，导致无法处理自身更新。`
       for (const node of nodes) {
