@@ -13,7 +13,6 @@
   ],
   "author": "ZhuChongLin <8210856@qq.com>",
   "scripts": {
-    "testvitebuild": "vite build",
     "dev": "vite dev --force",
     "build": "tsc && node scripts/index.js",
     "prepublishOnly": "npm run build",
