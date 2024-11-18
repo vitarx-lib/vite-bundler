@@ -1,7 +1,11 @@
 import { parseSync, traverse, types as t } from '@babel/core'
 import generator, { type GeneratorOptions, type GeneratorResult } from '@babel/generator'
 import { NodePath } from '@babel/traverse'
-import { handleFnVariableDeclaration, importHmrClientDeps, injectHmrCode } from './hmr-handler.js'
+import {
+  handleFnVariableDeclaration,
+  importHmrClientDeps,
+  injectFnWidgetHmrHandler
+} from './hmr-handler.js'
 
 // 函数节点
 type FunctionNode = t.FunctionExpression | t.ArrowFunctionExpression | t.FunctionDeclaration
@@ -160,8 +164,8 @@ function handleFunction(path: FunctionPath) {
           handleFnVariableDeclaration(statement, states)
         }
       }
-      // 7. 开发模式，注入热更新代码
-      injectHmrCode(block, states)
+      // 7. 开发模式，注入状态处理程序
+      injectFnWidgetHmrHandler(block, states)
     }
   }
 }
