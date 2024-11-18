@@ -66,11 +66,10 @@ function isRootPath(path: NodePath<t.Node>) {
 function isRootFunction(path: FunctionPath): boolean {
   if (path.type === 'FunctionDeclaration') {
     return isRootPath(path.parentPath)
-  } else {
-    // 匿名函数 或 箭头函数
-    if (path.parentPath.type === 'VariableDeclarator' && path.parentPath.parentPath?.parentPath) {
-      return isRootPath(path.parentPath.parentPath?.parentPath)
-    }
+  }
+  // 匿名函数 或 箭头函数
+  if (path.parentPath.type === 'VariableDeclarator' && path.parentPath.parentPath?.parentPath) {
+    return isRootPath(path.parentPath.parentPath?.parentPath)
   }
   return false
 }
@@ -169,7 +168,6 @@ function handleFunction(path: FunctionPath) {
     }
   }
 }
-
 
 /**
  * 处理jsx或tsx文件代码
