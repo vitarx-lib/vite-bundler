@@ -1,9 +1,9 @@
 {
   "name": "@vitarx/vite-plugin-vitarx",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "VitePluginVitarx 是一个 Vite 插件，用于构建 Vitarx 应用。",
   "types": "./dist/index.d.ts",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
   "type": "module",
   "license": "MIT",
   "keywords": [
@@ -13,6 +13,7 @@
   ],
   "author": "ZhuChongLin <8210856@qq.com>",
   "scripts": {
+    "test": "vite build",
     "dev": "vite dev --force",
     "build": "tsc && node scripts/index.js",
     "prepublishOnly": "npm run build",
