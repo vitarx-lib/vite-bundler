@@ -4,11 +4,10 @@ import { type ParseResult, types as t, parseSync } from '@babel/core'
  * 标识符
  */
 export enum HmrId {
-  hmr = '__$hmr$__',
-  vnode = '__$vnode$__',
-  state = '__$state$__',
-  manager = '__$ManageHmr$__',
-  register = '__$ManageHmr$__.register'
+  hmr = '__$vitarx_vite_hmr$__',
+  vnode = '__$vitarx_vnode$__',
+  state = '__$vitarx_state$__',
+  manager = '__$vitarx_hmr_manager$__'
 }
 
 let createVNodeDeclarationCache: t.VariableDeclaration | null = null
