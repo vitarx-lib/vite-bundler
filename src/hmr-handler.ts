@@ -106,30 +106,28 @@ function createHmrHandler() {
  */
 export function importHmrClientDeps(ast: ParseResult) {
   // 如果开发环境，则添加，HMR 热更新处理所需要的依赖
-  if (process.env.NODE_ENV === 'development') {
-    const injects: t.Statement[] = []
+  const injects: t.Statement[] = []
 
-    // 插入 import * as __$hmr$__ from "@vitarx/vite-plugin-vitarx"
-    const hmrImportStatement = t.importDeclaration(
-      [t.importNamespaceSpecifier(t.identifier(HmrId.hmr))],
-      t.stringLiteral('/src/hmr-client.ts') // npm run build 时会自动替换为@vitarx/vite-plugin-vitarx/hmr-client.js
+  // 插入 import * as __$hmr$__ from "@vitarx/vite-plugin-vitarx"
+  const hmrImportStatement = t.importDeclaration(
+    [t.importNamespaceSpecifier(t.identifier(HmrId.hmr))],
+    t.stringLiteral('/src/hmr-client.ts') // npm run build 时会自动替换为@vitarx/vite-plugin-vitarx/hmr-client.js
+  )
+  injects.push(hmrImportStatement)
+
+  // 插入 import { getCurrentVNode } from 'vitarx'
+  const importVitarx = hasImport(ast, 'vitarx', ['getCurrentVNode'])
+  if (importVitarx.length > 0) {
+    const importStatement = t.importDeclaration(
+      importVitarx.map(name => t.importSpecifier(t.identifier(name), t.identifier(name))),
+      t.stringLiteral('vitarx')
     )
-    injects.push(hmrImportStatement)
-
-    // 插入 import { getCurrentVNode } from 'vitarx'
-    const importVitarx = hasImport(ast, 'vitarx', ['getCurrentVNode'])
-    if (importVitarx.length > 0) {
-      const importStatement = t.importDeclaration(
-        importVitarx.map(name => t.importSpecifier(t.identifier(name), t.identifier(name))),
-        t.stringLiteral('vitarx')
-      )
-      injects.push(importStatement)
-    }
-    ast.program.body.unshift(...injects)
-
-    // 插入 vnode 缓存处理程序
-    ast.program.body.push(...createHmrHandler())
+    injects.push(importStatement)
   }
+  ast.program.body.unshift(...injects)
+
+  // 插入 vnode 缓存处理程序
+  ast.program.body.push(...createHmrHandler())
 }
 
 /**
@@ -164,6 +162,14 @@ export function handleFnVariableDeclaration(statement: t.VariableDeclaration, st
     }
   }
 }
+
+// 添加私有属性 #__$register$__
+export const injectClassWidgetHmrHandler = t.classPrivateProperty(
+  t.privateName(t.identifier('__$register$__')),
+  t.callExpression(t.memberExpression(t.identifier(HmrId.manager), t.identifier('register')), [
+    t.memberExpression(t.thisExpression(), t.identifier('vnode'))
+  ])
+)
 
 /**
  * 注入函数组件状态处理程序

@@ -3,7 +3,6 @@ import generator, { type GeneratorOptions, type GeneratorResult } from '@babel/g
 import { NodePath } from '@babel/traverse'
 import {
   handleFnVariableDeclaration,
-  HmrId,
   importHmrClientDeps,
   injectClassWidgetHmrHandler,
   injectFnWidgetHmrHandler
