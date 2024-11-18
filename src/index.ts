@@ -1,6 +1,11 @@
 import { Plugin, type ResolvedConfig } from 'vite'
 import handleJsxOrTsxFileCode from './jsx-handler.js'
 
+/**
+ * # vite-plugin-vitarx
+ *
+ * 支持HMR热更新
+ */
 export default function vitePluginVitarx(): Plugin {
   let vite_config: ResolvedConfig = {} as ResolvedConfig
   return {
