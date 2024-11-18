@@ -56,7 +56,7 @@ export function importHmrClientDeps(ast: ParseResult) {
     // 插入 import * as __$hmr$__ from "@vitarx/vite-plugin-vitarx"
     const hmrImportStatement = t.importDeclaration(
       [t.importNamespaceSpecifier(t.identifier(HmrId.hmr))],
-      t.stringLiteral('/src/hmr-client.ts') // npm run build 时会自动替换为@vitarx/vite-plugin-vitarx
+      t.stringLiteral('/src/hmr-client.ts') // npm run build 时会自动替换为@vitarx/vite-plugin-vitarx/hmr-client.js
     )
     ast.program.body.unshift(hmrImportStatement)
     const importVitarx = hasImport(ast, 'vitarx', ['getCurrentVNode'])
@@ -112,10 +112,10 @@ function createHmrReloadHandler(): t.IfStatement {
   if (createHmrReloadHandlerCache) return createHmrReloadHandlerCache
   const code = `if (import.meta.hot) {
   import.meta.hot.accept(mod => {
-    if (__$hmr$__.cannotHandleUpdate(${HmrId.vnode}, mod)) {
+    if (${HmrId.hmr}.cannotHandleUpdate(${HmrId.vnode}, mod)) {
       import.meta.hot.invalidate('组件从模块中移除，无法处理热更新。')
     } else {
-      ${HmrId.hmr}.handleHmrUpdate(${HmrId.vnode}, mod, ${HmrId.state})
+      ${HmrId.hmr}.handleHmrUpdate(${HmrId.vnode}, mod, ${HmrId.state},import.meta.url)
     }
   })
 }`
