@@ -131,7 +131,7 @@ export class ModuleManager {
     if (!mod) return 'module not found'
     for (const [name, nodes] of this.deps) {
       const newModule = getModule(name, mod)
-      if (!newModule) return `${name}在模块中被移除，导致无法处理自身更新。`
+      if (!newModule) return `${name}未从模块中导出，无法处理更新。`
       for (const node of nodes) {
         handleHmrUpdate(node, newModule)
       }
