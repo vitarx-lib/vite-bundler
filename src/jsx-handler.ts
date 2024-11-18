@@ -3,7 +3,9 @@ import generator, { type GeneratorOptions, type GeneratorResult } from '@babel/g
 import { NodePath } from '@babel/traverse'
 import {
   handleFnVariableDeclaration,
+  HmrId,
   importHmrClientDeps,
+  injectClassWidgetHmrHandler,
   injectFnWidgetHmrHandler
 } from './hmr-handler.js'
 
@@ -170,6 +172,23 @@ function handleFunction(path: FunctionPath) {
 }
 
 /**
+ * 获取类名称，如果不存在则返回null
+ *
+ * @param path
+ */
+function getClassName(path: NodePath<t.ClassDeclaration>): null | string {
+  if (!path.node.id) return null
+  return path.node.id.name
+}
+
+function handleClass(path: NodePath<t.ClassDeclaration>) {
+  const name = getClassName(path)
+  // 判断是否为顶级类，且命名规范符合PascalCase
+  if (!name || !isPascalCase(name) || !isRootPath(path.parentPath)) return
+  // 添加私有属性 #__$register$__ 注册类组件
+  path.node.body.body.unshift(injectClassWidgetHmrHandler)
+}
+/**
  * 处理jsx或tsx文件代码
  *
  * @param code - 经过esbuild处理过的jsx或tsx文件代码
@@ -183,12 +202,17 @@ export default function handleJsxOrTsxFileCode(
   // 使用 Babel 解析源码为 AST
   const ast = parseSync(code)
   if (ast && ast.program) {
-    importHmrClientDeps(ast)
-    traverse(ast, {
+    const handler: Record<string, Function> = {
       FunctionDeclaration: handleFunction,
       FunctionExpression: handleFunction,
       ArrowFunctionExpression: handleFunction
-    })
+    }
+    // 开发模式，植入 hmr 相关代码
+    if (process.env.NODE_ENV === 'development') {
+      importHmrClientDeps(ast)
+      handler.ClassDeclaration = handleClass
+    }
+    traverse(ast, handler)
     const generateResult = generate(ast, options)
     return {
       code: generateResult.code,
