@@ -1,6 +1,7 @@
 import { parseSync, traverse, types as t } from '@babel/core'
 import generator, { type GeneratorOptions, type GeneratorResult } from '@babel/generator'
 import { NodePath } from '@babel/traverse'
+import { handleFnVariableDeclaration, importHmrClientDeps, injectHmrCode } from './hmr-handler.js'
 
 // 函数节点
 type FunctionNode = t.FunctionExpression | t.ArrowFunctionExpression | t.FunctionDeclaration
@@ -58,15 +59,16 @@ function isRootPath(path: NodePath<t.Node>) {
  *
  * @param path - 函数路径
  */
-function isRootFunction(path: FunctionPath) {
+function isRootFunction(path: FunctionPath): boolean {
   if (path.type === 'FunctionDeclaration') {
     return isRootPath(path.parentPath)
   } else {
-    // 匿名函数
+    // 匿名函数 或 箭头函数
     if (path.parentPath.type === 'VariableDeclarator' && path.parentPath.parentPath?.parentPath) {
       return isRootPath(path.parentPath.parentPath?.parentPath)
     }
   }
+  return false
 }
 
 /**
@@ -125,6 +127,7 @@ function handleJsxReturn(returnNode: t.ReturnStatement): t.ReturnStatement {
   return returnNode
 }
 
+
 /**
  * 处理 AST 中的函数类型
  *
@@ -134,24 +137,35 @@ function handleFunction(path: FunctionPath) {
   // 1. 确保函数是根节点
   if (isRootFunctionWidget(path)) {
     // 2. 获取函数的 body
-    const body = path.node.body as t.BlockStatement
-    if (body.type === 'BlockStatement') {
-      // 3. 查找返回语句
-      for (let i = 0; i < body.body.length; i++) {
-        const statement = body.body[i]
+    const block = path.node.body as t.BlockStatement
+    // 3. 确保 body 是 BlockStatement 类型
+    if (block.type === 'BlockStatement') {
+      const states: Set<string> = new Set()
+      // 4. 遍历 body 处理语句
+      for (let i = 0; i < block.body.length; i++) {
+        const statement = block.body[i]
+        // 5. 处理返回语句
         if (t.isReturnStatement(statement)) {
-          // 4. 处理返回值（可以是 JSX 或其他）
+          // 处理返回值（可以是 JSX 或其他）
           const newStatement = handleJsxReturn(statement)
-          // 5. 判断是否需要替换
+          // 判断是否需要替换
           if (newStatement !== statement) {
-            // 6. 替换语句，直接修改 body 数组中的元素
-            body.body[i] = newStatement
+            // 替换语句，直接修改 body 数组中的元素
+            block.body[i] = newStatement
           }
+          continue
+        }
+        // 6. 开发模式，处理变量声明
+        if (process.env.NODE_ENV === 'development' && t.isVariableDeclaration(statement)) {
+          handleFnVariableDeclaration(statement, states)
         }
       }
+      // 7. 开发模式，注入热更新代码
+      injectHmrCode(block, states)
     }
   }
 }
+
 
 /**
  * 处理jsx或tsx文件代码
@@ -167,6 +181,7 @@ export default function handleJsxOrTsxFileCode(
   // 使用 Babel 解析源码为 AST
   const ast = parseSync(code)
   if (ast && ast.program) {
+    importHmrClientDeps(ast)
     traverse(ast, {
       FunctionDeclaration: handleFunction,
       FunctionExpression: handleFunction,

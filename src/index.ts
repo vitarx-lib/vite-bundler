@@ -12,7 +12,7 @@ function isHMRUpdate(file: string) {
 }
 
 export default function vitePluginVitarx(): Plugin {
-  let sourcemap: boolean | 'inline' | 'hidden' = false
+  let vite_config: ResolvedConfig = {} as ResolvedConfig
   return {
     name: 'vite-plugin-vitarx',
     config(config) {
@@ -28,13 +28,13 @@ export default function vitePluginVitarx(): Plugin {
       return config
     },
     configResolved(config: ResolvedConfig) {
-      sourcemap = config.build.sourcemap
+      vite_config = config
     },
     transform(code, id) {
       // 仅处理 .jsx 或 .tsx 文件
       if (id.endsWith('.jsx') || id.endsWith('.tsx')) {
         return handleJsxOrTsxFileCode(code, {
-          sourceMaps: sourcemap !== 'hidden',
+          sourceMaps: vite_config.build.sourcemap !== 'hidden',
           sourceFileName: id
         })
       }

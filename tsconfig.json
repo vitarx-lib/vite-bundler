@@ -32,7 +32,10 @@
     // 确保文件名大小写一致
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "vitarx/dist"
+    "jsxImportSource": "vitarx/dist",
+    "types": [
+      "vite/client"
+    ]
   },
   "include": ["src"],
   "exclude": ["node_modules"]

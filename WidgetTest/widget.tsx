@@ -1,8 +1,11 @@
-import { onUnmounted } from 'vitarx'
+import { onMounted, onUnmounted } from 'vitarx'
 
-export function Counter(props: { children: number }) {
-  onUnmounted(() => {
-    console.log('组件被销毁了')
+export default function Counter(props: { children: number }) {
+  onMounted(() => {
+    console.log('挂载了Counter')
   })
-  return <h1>{props.children}</h1>
+  onUnmounted(() => {
+    console.log('销毁了Counter')
+  })
+  return <h1>{props.children}++</h1>
 }
