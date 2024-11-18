@@ -12,3 +12,6 @@ yarn-error.log*
 /dist
 /tests
 /testDist
+index.html
+main.tsx
+vite.config.ts
