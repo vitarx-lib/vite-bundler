@@ -91,12 +91,8 @@ function createHmrHandler() {
   const code = `
   const ${HmrId.manager} = new ${HmrId.hmr}.ModuleManager()
   import.meta.hot.accept(mod => {
-    const message = ${HmrId.manager}.cannotHandleUpdate(mod)
-    if (message) {
-      import.meta.hot.invalidate(message)
-    } else {
-      ${HmrId.manager}.update(mod)
-    }
+    const updateResult = ${HmrId.manager}.update(mod)
+    typeof updateResult === 'string' && import.meta.hot.invalidate(updateResult)
   })
 `
   const parsed = parseSync(code)
