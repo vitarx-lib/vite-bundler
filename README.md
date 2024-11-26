@@ -8,7 +8,7 @@ VitePluginVitarx 是一个 Vite 插件，用于构建 Vitarx 应用。
 
 1. 安装：
    ```bash
-   npm install @vitarx/vite-plugin-vitarx --save-dev
+   npm install vite-plugin-vitarx --save-dev
    ```
 2. 使用
    ```javascript
