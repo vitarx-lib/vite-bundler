@@ -1,6 +1,6 @@
 {
-  "name": "@vitarx/vite-plugin-vitarx",
-  "version": "1.0.0",
+  "name": "vite-plugin-vitarx",
+  "version": "1.0.0-beta.1",
   "description": "VitePluginVitarx 是一个 Vite 插件，用于构建 Vitarx 应用。",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -8,7 +8,7 @@
   "license": "MIT",
   "keywords": [
     "vitarx",
-    "vitarx-plugin",
+    "vite-plugin",
     "vite-plugin-vitarx"
   ],
   "author": "ZhuChongLin <8210856@qq.com>",
@@ -31,10 +31,6 @@
     "typescript": "^5.6.2",
     "vitarx": "^0.1.1",
     "vite": "^5.4.11"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
   },
   "files": [
     "dist",
