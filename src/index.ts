@@ -2,11 +2,11 @@ import { Plugin, type ResolvedConfig } from 'vite'
 import handleJsxOrTsxFileCode from './jsx-handler.js'
 
 /**
- * # vite-plugin-vitarx
+ * ## vite-plugin-vitarx
  *
- * 支持HMR热更新
+ * 用于支持HMR热更新，优化函数式组件构建。
  */
-export default function vitePluginVitarx(): Plugin {
+export default function vitarx(): Plugin {
   let vite_config: ResolvedConfig = {} as ResolvedConfig
   return {
     name: 'vite-plugin-vitarx',
@@ -14,11 +14,11 @@ export default function vitePluginVitarx(): Plugin {
       if (!config.esbuild) {
         config.esbuild = {
           jsx: 'automatic',
-          jsxImportSource: 'vitarx/dist'
+          jsxImportSource: 'vitarx'
         }
       } else {
         config.esbuild.jsx = 'automatic'
-        config.esbuild.jsxImportSource = 'vitarx/dist'
+        config.esbuild.jsxImportSource = 'vitarx'
       }
       return config
     },
