@@ -12,7 +12,7 @@ export function replaceHmrClientModulePath() {
     // 正确匹配 t.stringLiteral('/src/hmr-client.ts') 的字符串形式
     const updatedContent = content.replace(
       /t\.stringLiteral\('\/src\/hmr-client\.ts'\)/g,
-      "t.stringLiteral('@vitarx/vite-plugin-vitarx/dist/hmr-client.js')"
+      "t.stringLiteral('vite-plugin-vitarx/dist/hmr-client.js')"
     )
 
     writeFileSync(distPath, updatedContent, 'utf-8')

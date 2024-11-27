@@ -155,10 +155,10 @@ export function importHmrClientDeps(ast: ParseResult) {
   // 如果开发环境，则添加，HMR 热更新处理所需要的依赖
   const injects: t.Statement[] = []
 
-  // 插入 import * as __$hmr$__ from "@vitarx/vite-plugin-vitarx"
+  // 插入 import * as __$hmr$__ from "vite-plugin-vitarx"
   const hmrImportStatement = t.importDeclaration(
     [t.importNamespaceSpecifier(t.identifier(HmrId.hmr))],
-    t.stringLiteral('/src/hmr-client.ts') // npm run build 时会自动替换为@vitarx/vite-plugin-vitarx/hmr-client.js
+    t.stringLiteral('/src/hmr-client.ts') // npm run build 时会自动替换为vite-plugin-vitarx/hmr-client.js
   )
   injects.push(hmrImportStatement)
 
