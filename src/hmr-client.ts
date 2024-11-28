@@ -1,11 +1,11 @@
 // noinspection JSUnusedGlobalSymbols
 
 import {
-  type ClassWidget,
+  type ClassWidgetConstructor,
   createFnWidget,
   createScope,
-  type FnWidget,
-  isClassWidget,
+  type FnWidgetConstructor,
+  isClassWidgetConstructor,
   type VNode,
   Widget
 } from 'vitarx'
@@ -17,7 +17,7 @@ declare global {
     [WidgetCache]: WeakMap<WidgetConstructor, WidgetConstructor>
   }
 }
-type WidgetConstructor = FnWidget | ClassWidget
+type WidgetConstructor = FnWidgetConstructor | ClassWidgetConstructor
 type VNODE = VNode<WidgetConstructor> & {
   __$vitarx_state$__: Record<string, any>
   instance: Widget
@@ -80,9 +80,10 @@ function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
   // 更新虚拟节点中的组件构造函数
   vnode.type = newModule
   // 触发卸载钩子
+  // @ts-ignore
   vnode.instance.onUnmounted?.()
   createScope(() => {
-    if (isClassWidget(vnode.type)) {
+    if (isClassWidgetConstructor(vnode.type)) {
       new vnode.type(vnode.props).renderer
     } else {
       const oldReturn = extractTopLevelReturnStatements(oldType.toString())
@@ -91,12 +92,14 @@ function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
       if (oldReturn === newReturn) {
         // @ts-ignore
         delete vnode.__$vitarx_state$__
-        const newInstance = createFnWidget(vnode as VNode<FnWidget>)
+        const newInstance = createFnWidget(vnode as VNode<FnWidgetConstructor>)
+        // @ts-ignore
         newInstance.onCreated?.()
         newInstance.renderer
+        // @ts-ignore
         newInstance.onMounted?.()
       } else {
-        createFnWidget(vnode as VNode<FnWidget>).renderer
+        createFnWidget(vnode as VNode<FnWidgetConstructor>).renderer
       }
     }
   })
