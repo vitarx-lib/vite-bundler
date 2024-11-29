@@ -6,26 +6,37 @@ import {
   createScope,
   type FnWidgetConstructor,
   isClassWidgetConstructor,
+  LifeCycleHooks,
   type VNode,
   Widget
 } from 'vitarx'
+import { __LifeCycleTrigger__ } from 'vitarx/dist/core/widget/constant.js'
+
 import type { ModuleNamespace } from 'vite/types/hot.js'
 
 const WidgetCache = '__$vitarx_widget_hmr_map$__'
+
 declare global {
   interface Window {
     [WidgetCache]: WeakMap<WidgetConstructor, WidgetConstructor>
   }
 }
+
 type WidgetConstructor = FnWidgetConstructor | ClassWidgetConstructor
 type VNODE = VNode<WidgetConstructor> & {
   __$vitarx_state$__: Record<string, any>
   instance: Widget
   __$restore$__?: boolean
 }
+
 // 初始化widget缓存，配合jsxDev对引用进行更新
 !window[WidgetCache] &&
 (window[WidgetCache] = new WeakMap<WidgetConstructor, WidgetConstructor>())
+
+function triggerLifeCycle(widget: Widget, hook: LifeCycleHooks, ...args: any[]): any {
+  return (widget as any)[__LifeCycleTrigger__](hook, ...args)
+}
+
 /**
  * 获取记录的状态
  *
@@ -80,8 +91,7 @@ function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
   // 更新虚拟节点中的组件构造函数
   vnode.type = newModule
   // 触发卸载钩子
-  // @ts-ignore
-  vnode.instance.onUnmounted?.()
+  triggerLifeCycle(vnode.instance, LifeCycleHooks.unmounted)
   createScope(() => {
     if (isClassWidgetConstructor(vnode.type)) {
       new vnode.type(vnode.props).renderer
@@ -93,11 +103,12 @@ function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
         // @ts-ignore
         delete vnode.__$vitarx_state$__
         const newInstance = createFnWidget(vnode as VNode<FnWidgetConstructor>)
-        // @ts-ignore
-        newInstance.onCreated?.()
+        // 触发创建生命周期
+        triggerLifeCycle(newInstance, LifeCycleHooks.created)
+        // 初始化渲染器
         newInstance.renderer
-        // @ts-ignore
-        newInstance.onMounted?.()
+        // 触发挂载生命周期
+        triggerLifeCycle(newInstance, LifeCycleHooks.mounted)
       } else {
         createFnWidget(vnode as VNode<FnWidgetConstructor>).renderer
       }
