@@ -33,10 +33,6 @@ export default function vitarx(): Plugin {
           sourceFileName: id
         })
       }
-      return {
-        code,
-        map: null
-      }
     }
   }
 }
