@@ -10,7 +10,7 @@ import {
 } from 'vitarx'
 import type { ModuleNamespace } from 'vite/types/hot.js'
 import { replaceElement } from 'vitarx/dist/core/renderer/web-runtime-dom/index.js'
-import { __WidgetIntrinsicProps__ } from 'vitarx/src/core/widget/constant.js'
+import { __WidgetIntrinsicProps__ } from 'vitarx/dist/core/widget/constant.js'
 import { HmrId } from './constant.js'
 import { isDifferenceOnlyInBuild, isDifferenceOnlyInRender } from './utils.js'
 
