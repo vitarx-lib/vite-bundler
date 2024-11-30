@@ -52,29 +52,6 @@ function getModule(name: string, mod: ModuleNamespace) {
   return undefined
 }
 
-interface ExtractedClassDetails {
-  buildMethodCode: string
-  otherCode: string
-}
-
-/**
- * 提取代码块中的顶级return语句
- *
- * @param functionCode
- */
-function extractTopLevelReturnStatements(functionCode: string): string {
-  // Remove comments from the code
-  const noCommentsCode = functionCode.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
-  // Match top-level return statements
-  const regex = /(?<![\w$])return\s+[^;]+;/g
-  let match
-  const returns = []
-  while ((match = regex.exec(noCommentsCode)) !== null) {
-    returns.push(match[0])
-  }
-  return returns.join('\n')
-}
-
 /**
  * 处理热更新
  *
@@ -148,7 +125,7 @@ function updateWidget(newInstance: Widget, oldInstance: Widget, onlyUpdateBuild:
     // 往父元素中插入占位元素
     replaceElement(placeholderEl, oldInstance.renderer.el, parentEl)
     // 卸载旧的组件实例
-    oldInstance.renderer.unmount()
+    oldInstance.renderer.unmount(false)
     // 渲染新元素
     const el = newInstance.renderer.mount()
     // 用新元素替换占位元素
