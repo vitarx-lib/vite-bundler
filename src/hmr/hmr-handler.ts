@@ -150,7 +150,7 @@ export function importHmrClientDeps(ast: ParseResult) {
   // 插入 import * as __$hmr$__ from "vite-plugin-vitarx"
   const hmrImportStatement = t.importDeclaration(
     [t.importNamespaceSpecifier(t.identifier(HmrId.hmr))],
-    t.stringLiteral('/src/hmr/hmr-client.ts') // npm run build 时会自动替换为vite-plugin-vitarx/hmr-client.js
+    t.stringLiteral('/src/hmr/hmr-client.ts') // npm run build 时会自动替换为vite-plugin-vitarx/dist/hmr/hmr-client.js
   )
   injects.push(hmrImportStatement)
 
