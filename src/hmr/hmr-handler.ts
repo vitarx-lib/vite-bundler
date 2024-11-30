@@ -1,14 +1,5 @@
 import { type ParseResult, types as t, parseSync } from '@babel/core'
-
-/**
- * 标识符
- */
-export enum HmrId {
-  hmr = '__$vitarx_vite_hmr$__',
-  vnode = '__$vitarx_vnode$__',
-  state = '__$vitarx_state$__',
-  manager = '__$vitarx_hmr_manager$__'
-}
+import { HmrId } from './constant.js'
 
 let createVNodeDeclarationCache: t.VariableDeclaration | null = null
 let createHmrHandlerCache: t.Statement[] | null = null
@@ -85,7 +76,7 @@ function createHmrRegisterHandler() {
 /**
  * 创建vnode缓存处理程序
  */
-function createHmrHandler() {
+function createHmrHandler(): t.Statement[] {
   if (createHmrHandlerCache) return createHmrHandlerCache
   const code = `
   import.meta.hot.accept(mod => {
@@ -146,6 +137,7 @@ function createManagerDeclaration(): t.VariableDeclaration {
   )
   return managerDeclarationCache
 }
+
 /**
  * 导入客户端热更新所需的依赖
  *
@@ -158,7 +150,7 @@ export function importHmrClientDeps(ast: ParseResult) {
   // 插入 import * as __$hmr$__ from "vite-plugin-vitarx"
   const hmrImportStatement = t.importDeclaration(
     [t.importNamespaceSpecifier(t.identifier(HmrId.hmr))],
-    t.stringLiteral('/src/hmr-client.ts') // npm run build 时会自动替换为vite-plugin-vitarx/hmr-client.js
+    t.stringLiteral('/src/hmr/hmr-client.ts') // npm run build 时会自动替换为vite-plugin-vitarx/hmr-client.js
   )
   injects.push(hmrImportStatement)
 
