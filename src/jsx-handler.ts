@@ -6,7 +6,7 @@ import {
   importHmrClientDeps,
   injectClassWidgetHmrHandler,
   injectFnWidgetHmrHandler
-} from './hmr-handler.js'
+} from './hmr/hmr-handler.js'
 
 // 函数节点
 type FunctionNode = t.FunctionExpression | t.ArrowFunctionExpression | t.FunctionDeclaration
