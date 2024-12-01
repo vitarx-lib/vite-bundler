@@ -37,7 +37,7 @@ type VNODE<T extends WidgetConstructor = WidgetConstructor> = VNode<T> & {
  * @param name
  */
 export function getState(vnode: VNODE, name: string) {
-  return vnode.__$vitarx_state$__?.[name]
+  return vnode?.__$vitarx_state$__?.[name]
 }
 
 /**
@@ -62,6 +62,7 @@ function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
   const oldModule = vnode.type
   // 更新虚拟节点中的组件构造函数
   vnode.type = newModule
+  if (['unloaded', 'uninstalling'].includes(vnode.instance.renderer.state)) return
   createScope(() => {
     if (isClassWidgetConstructor(vnode.type)) {
       const newInstance = new vnode.type(vnode.props)
