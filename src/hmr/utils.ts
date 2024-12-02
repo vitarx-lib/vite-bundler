@@ -1,3 +1,7 @@
+export interface ChangeCode {
+  build: boolean
+  other: boolean
+}
 // 提取类代码中的 `build` 方法
 function extractBuildMethod(classCode: string): string {
   const buildMethodRegex = /build\s*\(\)\s*{([\s\S]*?)^}/gm
@@ -11,24 +15,36 @@ function extractOtherCode(classCode: string, buildMethod: string): string {
   return classCode.replace(buildMethod, '').trim()
 }
 
-// 判断两个类的差异是否仅存在于 `build` 方法
-export function isDifferenceOnlyInBuild(newCode: string, oldCode: string): boolean {
+/**
+ * 判断两个类组件的差异
+ *
+ * @param newCode
+ * @param oldCode
+ * @returns {ChangeCode}
+ */
+export function differenceClassWidgetChange(newCode: string, oldCode: string): ChangeCode {
+  const change: ChangeCode = {
+    build: false,
+    other: false
+  }
   // 提取新旧类的 `build` 方法
   const newBuildMethod = extractBuildMethod(newCode)
   const oldBuildMethod = extractBuildMethod(oldCode)
 
-  // 如果 `build` 方法不同，则进一步比较其他部分
+  // 判断构建方法差异
   if (newBuildMethod !== oldBuildMethod) {
-    // 提取除 `build` 方法外的其他代码部分
-    const newCodeWithoutBuild = extractOtherCode(newCode, newBuildMethod)
-    const oldCodeWithoutBuild = extractOtherCode(oldCode, oldBuildMethod)
-
-    // 如果移除 `build` 方法后的其他部分相同，则差异仅在 `build` 方法
-    return newCodeWithoutBuild === oldCodeWithoutBuild
+    change.build = true
   }
 
-  // 如果 `build` 方法相同，则两者差异仅在于 `build` 方法
-  return true
+  // 提取除 `build` 方法外的其他代码部分
+  const newCodeWithoutBuild = extractOtherCode(newCode, newBuildMethod)
+  const oldCodeWithoutBuild = extractOtherCode(oldCode, oldBuildMethod)
+
+  // 判断逻辑代码差异
+  if (newCodeWithoutBuild !== oldCodeWithoutBuild) {
+    change.other = true
+  }
+  return change
 }
 
 /**
@@ -59,20 +75,18 @@ function separateLogicAndRender(functionCode: string): { logicCode: string; rend
 }
 
 /**
- * 判断两个函数的差异是否只在于 return 语句
+ * 判断两个函数组件的差异
  *
  * @param newCode 新函数代码
  * @param oldCode 旧函数代码
- * @returns 如果差异仅在于 `Render` 语句，则返回 true，否则返回 false
+ * @returns {ChangeCode}
  */
-export function isDifferenceOnlyInRender(newCode: string, oldCode: string): boolean {
+export function differenceFnWidgetChange(newCode: string, oldCode: string): ChangeCode {
   // 提取新旧函数的顶级 return 语句
   const { renderCode: newRenderCode, logicCode: newLogicCode } = separateLogicAndRender(newCode)
   const { renderCode: oldRenderCode, logicCode: oldLogicCode } = separateLogicAndRender(oldCode)
-  // 如果函数的渲染代码不相同，则判断逻辑代码是否相同
-  if (newRenderCode !== oldRenderCode) {
-    // 如果逻辑代码相同则返回true，不相同则返回false，整体都更新，不保留状态
-    return newLogicCode === oldLogicCode
+  return {
+    build: newRenderCode !== oldRenderCode,
+    other: newLogicCode !== oldLogicCode
   }
-  return true
 }
