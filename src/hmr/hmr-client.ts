@@ -12,7 +12,7 @@ import type { ModuleNamespace } from 'vite/types/hot.js'
 import { replaceElement } from 'vitarx/dist/core/renderer/web-runtime-dom/index.js'
 import { __WidgetIntrinsicProps__ } from 'vitarx/dist/core/widget/constant.js'
 import { HmrId } from './constant.js'
-import { isDifferenceOnlyInBuild, isDifferenceOnlyInRender } from './utils.js'
+import { type ChangeCode, differenceClassWidgetChange, differenceFnWidgetChange } from './utils.js'
 
 declare global {
   interface Window {
@@ -69,14 +69,14 @@ function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
       updateWidget(
         newInstance,
         vnode.instance,
-        isDifferenceOnlyInBuild(newModule.toString(), oldModule.toString())
+        differenceClassWidgetChange(newModule.toString(), oldModule.toString())
       )
     } else {
-      const onlyUpdateBuild = isDifferenceOnlyInRender(newModule.toString(), oldModule.toString())
+      const change = differenceFnWidgetChange(newModule.toString(), oldModule.toString())
       // @ts-ignore 如果非只更新渲染视图，则删除保留的状态
-      if (!onlyUpdateBuild) delete vnode.__$vitarx_state$__
+      if (change.other) delete vnode.__$vitarx_state$__
       const newInstance = createFnWidget(vnode as VNode<FnWidgetConstructor>)
-      updateWidget(newInstance, vnode.instance, onlyUpdateBuild)
+      updateWidget(newInstance, vnode.instance, change)
     }
   })
 }
@@ -86,11 +86,11 @@ function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
  *
  * @param newInstance
  * @param oldInstance
- * @param onlyUpdateBuild
+ * @param change
  */
-function updateWidget(newInstance: Widget, oldInstance: Widget, onlyUpdateBuild: boolean): void {
+function updateWidget(newInstance: Widget, oldInstance: Widget, change: ChangeCode): void {
   // 缓存新的组件构造函数
-  if (onlyUpdateBuild) {
+  if (change.build && !change.other) {
     // 销毁旧作用域
     oldInstance.renderer.scope?.destroy()
     // 恢复属性
@@ -114,7 +114,7 @@ function updateWidget(newInstance: Widget, oldInstance: Widget, onlyUpdateBuild:
     newInstance.vnode.ref && (newInstance.vnode.ref.value = newInstance)
     // 更新新的子节点到旧子节点
     newInstance.renderer.update(newChild)
-  } else {
+  } else if (change.build || change.other) {
     // 如果是非活跃状态则不更新js逻辑层与数据层的变化
     if (oldInstance.renderer.state !== 'activated') return
     // 创建占位元素
@@ -124,15 +124,17 @@ function updateWidget(newInstance: Widget, oldInstance: Widget, onlyUpdateBuild:
     // 确保父元素存在
     if (!parentEl) return
     // 往父元素中插入占位元素
-    replaceElement(placeholderEl, oldInstance.renderer.el, parentEl)
+    replaceElement(placeholderEl, oldInstance.renderer.el!, parentEl)
     // 卸载旧的组件实例
     oldInstance.renderer.unmount(false)
     // 渲染新元素
-    const el = newInstance.renderer.mount()
+    const el = newInstance.renderer.render()
     // 用新元素替换占位元素
     parentEl.replaceChild(el, placeholderEl)
     // 重置小部件实例
     newInstance.vnode.instance = newInstance
+    // 挂载完成
+    newInstance.renderer.mount()
   }
 }
 
@@ -140,7 +142,7 @@ function updateWidget(newInstance: Widget, oldInstance: Widget, onlyUpdateBuild:
  * 模块依赖管理器
  */
 export class ModuleManager {
-  deps: Map<string, Set<VNODE>> = new Map()
+  active: Map<string, Set<VNODE>> = new Map()
 
   /**
    * 注册节点
@@ -149,10 +151,10 @@ export class ModuleManager {
    */
   register(vnode: VNODE) {
     const widget = vnode.type.name
-    if (this.deps.has(widget)) {
-      this.deps.get(widget)!.add(vnode)
+    if (this.active.has(widget)) {
+      this.active.get(widget)!.add(vnode)
     } else {
-      this.deps.set(widget, new Set([vnode]))
+      this.active.set(widget, new Set([vnode]))
     }
   }
 
@@ -163,9 +165,9 @@ export class ModuleManager {
    */
   update(mod: ModuleNamespace | undefined) {
     if (!mod) return 'module not found'
-    for (const [name, nodes] of this.deps) {
+    for (const [name, nodes] of this.active) {
       const newModule = getModule(name, mod)
-      if (!newModule) return `${name}组件已从模块中移除，无法处理更新。`
+      if (!newModule) continue
       for (const node of nodes) {
         // 缓存新的组件构造函数
         window[HmrId.cache].set(node.type, newModule)
