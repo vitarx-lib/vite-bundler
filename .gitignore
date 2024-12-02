@@ -13,3 +13,4 @@ yarn-error.log*
 index.html
 main.tsx
 vite.config.ts
+/main.ts
