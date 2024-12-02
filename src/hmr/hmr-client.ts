@@ -89,7 +89,6 @@ function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
  * @param change
  */
 function updateWidget(newInstance: Widget, oldInstance: Widget, change: ChangeCode): void {
-  // 缓存新的组件构造函数
   if (change.build && !change.other) {
     // 销毁旧作用域
     oldInstance.renderer.scope?.destroy()
