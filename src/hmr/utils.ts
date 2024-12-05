@@ -1,7 +1,15 @@
+import { parse } from 'acorn'
+
 export interface ChangeCode {
   build: boolean
   other: boolean
 }
+
+interface SeparationResult {
+  logicCode: string
+  renderCode: string
+}
+
 // 提取类代码中的 `build` 方法
 function extractBuildMethod(classCode: string): string {
   const buildMethodRegex = /build\s*\(\)\s*{([\s\S]*?)^}/gm
@@ -53,24 +61,46 @@ export function differenceClassWidgetChange(newCode: string, oldCode: string): C
  * @param functionCode 完整函数代码
  * @returns 包含逻辑代码和渲染代码的对象
  */
-function separateLogicAndRender(functionCode: string): { logicCode: string; renderCode: string[] } {
-  const noCommentsCode = functionCode.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '') // 去除注释
+function separateLogicAndRender(functionCode: string): SeparationResult {
+  const jsxNodes: string[] = []
 
-  // 匹配嵌套 jsxDEV 调用，支持多层嵌套
-  const jsxRegex = /jsxDEV\((?:[^)(]+|\((?:[^)(]+|\([^)(]*\))*\))*\)/g
+  // 去除注释
+  const noCommentsCode = functionCode.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
 
-  const renderCode: string[] = []
-  let logicCode = noCommentsCode
+  // 解析代码为 AST
+  const ast = parse(noCommentsCode, {
+    ecmaVersion: 'latest',
+    sourceType: 'module'
+  })
 
-  let match
-  while ((match = jsxRegex.exec(noCommentsCode)) !== null) {
-    renderCode.push(match[0]) // 保存完整的 jsxDEV 调用块
-    logicCode = logicCode.replace(match[0], '') // 从逻辑代码中移除
+  // 遍历 AST，提取 jsxDEV 调用
+  const extractJSX = (node: any) => {
+    if (node.type === 'CallExpression' && node.callee.name === 'jsxDEV') {
+      const start = node.start
+      const end = node.end
+      jsxNodes.push(noCommentsCode.slice(start, end)) // 提取 jsxDEV 的源码
+    }
+    // 递归处理子节点
+    Object.values(node).forEach(child => {
+      if (Array.isArray(child)) {
+        child.forEach(extractJSX)
+      } else if (typeof child === 'object' && child !== null) {
+        extractJSX(child)
+      }
+    })
   }
+
+  extractJSX(ast)
+
+  // 去除逻辑代码中的 jsxDEV
+  let logicCode = noCommentsCode
+  jsxNodes.forEach(jsx => {
+    logicCode = logicCode.replace(jsx, '') // 替换掉所有的 jsxDEV 调用
+  })
 
   return {
     logicCode: logicCode.trim(),
-    renderCode
+    renderCode: jsxNodes.join()
   }
 }
 
