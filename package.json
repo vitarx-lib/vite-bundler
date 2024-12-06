@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-vitarx",
-  "version": "1.0.0-beta.8",
+  "version": "1.0.0-beta.9",
   "description": "VitePluginVitarx 是一个 Vite 插件，用于构建 Vitarx 应用。",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -20,11 +20,12 @@
     "push": "npm publish --access=public"
   },
   "peerDependencies": {
-    "vitarx": "^1.0.0-beta.9"
+    "vitarx": "^1.0.0-beta.10"
   },
   "dependencies": {
     "@babel/core": "^7.26.0",
-    "@babel/generator": "^7.26.2"
+    "@babel/generator": "^7.26.2",
+    "acorn": "^8.14.0"
   },
   "devDependencies": {
     "@types/babel__core": "^7.20.5",
