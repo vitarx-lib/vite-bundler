@@ -9,7 +9,7 @@ import {
   Widget
 } from 'vitarx'
 import type { ModuleNamespace } from 'vite/types/hot.js'
-import { replaceElement } from 'vitarx/dist/core/renderer/web-runtime-dom/index.js'
+import { insertBeforeExactly } from 'vitarx/dist/core/renderer/web-runtime-dom/index.js'
 import { __WidgetIntrinsicProps__ } from 'vitarx/dist/core/widget/constant.js'
 import { HmrId } from './constant.js'
 import { type ChangeCode, differenceClassWidgetChange, differenceFnWidgetChange } from './utils.js'
@@ -106,7 +106,9 @@ function updateWidget(newInstance: Widget, oldInstance: Widget, change: ChangeCo
     // 恢复渲染器状态
     newInstance.renderer['_state'] = oldInstance.renderer.state
     // 恢复占位元素
-    newInstance.renderer['_placeholderEl'] = oldInstance.renderer['_placeholderEl']
+    newInstance.renderer['_shadowElement'] = oldInstance.renderer['_shadowElement']
+    // 恢复传送节点父元素
+    newInstance.renderer['_teleport'] = oldInstance.renderer['_teleport']
     // 重置小部件实例
     newInstance.vnode.instance = newInstance
     // 更新引用
@@ -119,17 +121,27 @@ function updateWidget(newInstance: Widget, oldInstance: Widget, change: ChangeCo
     // 创建占位元素
     const placeholderEl: Text = document.createTextNode('')
     // 父元素
-    const parentEl = oldInstance.renderer.parentEl
-    // 确保父元素存在
-    if (!parentEl) return
-    // 往父元素中插入占位元素
-    replaceElement(placeholderEl, oldInstance.renderer.el!, parentEl)
+    let parentEl: ParentNode
+    // 如果旧实例使用了传送功能
+    if (oldInstance.renderer.teleport) {
+      // 占位节点插入到影子元素之前
+      parentEl = insertBeforeExactly(placeholderEl, oldInstance.renderer.shadowElement)
+    } else {
+      // 占位节点插入到旧元素之前
+      parentEl = insertBeforeExactly(placeholderEl, oldInstance.renderer.el!)
+    }
     // 卸载旧的组件实例
     oldInstance.renderer.unmount(false)
     // 渲染新元素
     const el = newInstance.renderer.render()
-    // 用新元素替换占位元素
-    parentEl.replaceChild(el, placeholderEl)
+    // 如果是传送节点
+    if (newInstance.renderer.teleport) {
+      // 用影子元素替换掉占位元素，新组件实例挂载时自动将真实的元素挂载到传送节点中！
+      parentEl.replaceChild(newInstance.renderer.shadowElement, placeholderEl)
+    } else {
+      // 非占位节点用新元素替换占位元素
+      parentEl.replaceChild(el, placeholderEl)
+    }
     // 重置小部件实例
     newInstance.vnode.instance = newInstance
     // 挂载完成
