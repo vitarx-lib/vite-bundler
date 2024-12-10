@@ -185,18 +185,21 @@ export function handleFnVariableDeclaration(statement: t.VariableDeclaration, st
       const callName = callee.type === 'Identifier' ? callee.name : null
       if (!callName) continue
       if (callName === 'ref' || callName === 'reactive') {
-        // 获取调用表达式的参数
-        const args = declarator.init.arguments
-        const defaultValue = args.length > 0 ? args[0] : t.nullLiteral()
+        // 获取调用表达式的参数 保留原始参数或为空
+        const callArgs = declarator.init.arguments.length > 0 ? declarator.init.arguments : []
+
+        // 创建左测的还原状态的表达式
+        const left = t.callExpression(t.identifier(`${HmrId.hmr}.getState`), [
+          t.identifier(HmrId.vnode),
+          t.stringLiteral(varName)
+        ])
+
+        // 括号包裹原始调用表达式
+        const right = t.parenthesizedExpression(t.callExpression(callee, callArgs))
+
         // 创建新的表达式
-        declarator.init = t.logicalExpression(
-          '||',
-          t.callExpression(t.identifier(`${HmrId.hmr}.getState`), [
-            t.identifier(HmrId.vnode),
-            t.stringLiteral(varName)
-          ]),
-          t.parenthesizedExpression(t.callExpression(callee, [defaultValue]))
-        )
+        declarator.init = t.logicalExpression('??', left, right)
+
         states.add(varName)
       }
     }
