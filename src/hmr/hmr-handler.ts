@@ -179,32 +179,29 @@ export function importHmrClientDeps(ast: ParseResult) {
 export function handleFnVariableDeclaration(statement: t.VariableDeclaration, states: Set<string>) {
   for (const declarator of statement.declarations) {
     const varName = declarator.id.type === 'Identifier' ? declarator.id.name : null
+    // 如果没有变量名称则跳过
     if (!varName) continue
-    if (t.isCallExpression(declarator.init)) {
-      const callee = declarator.init.callee
-      const callName = callee.type === 'Identifier' ? callee.name : null
-      if (!callName) continue
-      if (callName === 'ref' || callName === 'reactive') {
-        // 获取调用表达式的参数 保留原始参数或为空
-        const callArgs = declarator.init.arguments.length > 0 ? declarator.init.arguments : []
 
-        // 创建左测的还原状态的表达式
-        const left = t.callExpression(t.identifier(`${HmrId.hmr}.getState`), [
-          t.identifier(HmrId.vnode),
-          t.stringLiteral(varName)
-        ])
+    // 如果初始化值不是函数类型，则创建还原状态表达式
+    if (!t.isFunctionExpression(declarator.init) && !t.isArrowFunctionExpression(declarator.init)) {
+      const left = t.callExpression(t.identifier(`${HmrId.hmr}.getState`), [
+        t.identifier(HmrId.vnode),
+        t.stringLiteral(varName)
+      ])
 
-        // 括号包裹原始调用表达式
-        const right = t.parenthesizedExpression(t.callExpression(callee, callArgs))
+      // 确保 declarator.init 不是 undefined 或 null
+      const right = declarator.init
+        ? t.parenthesizedExpression(declarator.init)
+        : t.identifier('undefined') // 如果没有初始化值，使用 'undefined'
+      
+      // 创建新的表达式，使用 `??` 操作符
+      declarator.init = t.logicalExpression('??', left, right)
 
-        // 创建新的表达式
-        declarator.init = t.logicalExpression('??', left, right)
-
-        states.add(varName)
-      }
+      states.add(varName)
     }
   }
 }
+
 
 // 添加私有属性 #__$register$__
 export const injectClassWidgetHmrHandler = t.classPrivateProperty(

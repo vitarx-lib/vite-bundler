@@ -37,7 +37,10 @@ type VNODE<T extends WidgetConstructor = WidgetConstructor> = VNode<T> & {
  * @param name
  */
 export function getState(vnode: VNODE, name: string) {
-  return vnode?.__$vitarx_state$__?.[name]
+  const state = vnode?.__$vitarx_state$__?.[name]
+  // 如果是副作用，则丢弃。
+  if (state && isEffect(state)) return undefined
+  return state
 }
 
 /**
