@@ -1,34 +1,34 @@
+// noinspection JSUnusedGlobalSymbols
+
 import {
-  type ClassWidgetConstructor,
-  createFnWidget,
-  createScope,
-  type FnWidgetConstructor,
+  createWidgetVNodeInstance,
   isClassWidgetConstructor,
   isEffect,
+  type Scope,
   type VNode,
-  Widget
+  Widget,
+  type WidgetType
 } from 'vitarx'
 import type { ModuleNamespace } from 'vite/types/hot.js'
 import { insertBeforeExactly } from 'vitarx/dist/core/renderer/web-runtime-dom/index.js'
-import { __WidgetIntrinsicProps__ } from 'vitarx/dist/core/widget/constant.js'
+import { __widgetIntrinsicPropKeywords__ } from 'vitarx/dist/core/widget/constant.js'
 import { HmrId } from './constant.js'
 import { type ChangeCode, differenceClassWidgetChange, differenceFnWidgetChange } from './utils.js'
 
 declare global {
   interface Window {
-    [HmrId.cache]: WeakMap<WidgetConstructor, WidgetConstructor>
+    [HmrId.cache]: WeakMap<WidgetType, WidgetType>
   }
 }
 
-type WidgetConstructor = FnWidgetConstructor | ClassWidgetConstructor
-
-type VNODE<T extends WidgetConstructor = WidgetConstructor> = VNode<T> & {
+type VNODE<T extends WidgetType = WidgetType> = VNode<T> & {
   __$vitarx_state$__: Record<string, any>
   instance: Widget
+  scope: Scope
 }
 
 // 初始化widget缓存，配合jsxDev对引用进行更新
-!window[HmrId.cache] && (window[HmrId.cache] = new WeakMap<WidgetConstructor, WidgetConstructor>())
+!window[HmrId.cache] && (window[HmrId.cache] = new WeakMap<WidgetType, WidgetType>())
 
 /**
  * 获取记录的状态
@@ -61,27 +61,24 @@ function getModule(name: string, mod: ModuleNamespace) {
  * @param vnode
  * @param newModule
  */
-function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
+function handleHmrUpdate(vnode: VNODE, newModule: WidgetType) {
   const oldModule = vnode.type
   // 更新虚拟节点中的组件构造函数
   vnode.type = newModule
   if (['unloaded', 'uninstalling'].includes(vnode.instance.renderer.state)) return
-  createScope(() => {
-    if (isClassWidgetConstructor(vnode.type)) {
-      const newInstance = new vnode.type(vnode.props)
-      updateWidget(
-        newInstance,
-        vnode.instance,
-        differenceClassWidgetChange(newModule.toString(), oldModule.toString())
-      )
-    } else {
-      const change = differenceFnWidgetChange(newModule.toString(), oldModule.toString())
-      // @ts-ignore 如果非只更新渲染视图，则删除保留的状态
-      if (change.other) delete vnode.__$vitarx_state$__
-      const newInstance = createFnWidget(vnode as VNode<FnWidgetConstructor>)
-      updateWidget(newInstance, vnode.instance, change)
-    }
-  })
+  const oldInstance = vnode.instance
+  const oldScope = vnode.scope
+  let change: ChangeCode
+  if (isClassWidgetConstructor(vnode.type)) {
+    change = differenceClassWidgetChange(newModule.toString(), oldModule.toString())
+  } else {
+    change = differenceFnWidgetChange(newModule.toString(), oldModule.toString())
+    // @ts-ignore 如果非只更新渲染视图，则删除保留的状态
+    if (change.other) delete vnode.__$vitarx_state$__
+  }
+  if (!change.build && !change.other) return
+  const newInstance = createWidgetVNodeInstance(vnode)
+  updateWidget(newInstance, oldInstance, oldScope, change)
 }
 
 /**
@@ -89,15 +86,21 @@ function handleHmrUpdate(vnode: VNODE, newModule: WidgetConstructor) {
  *
  * @param newInstance
  * @param oldInstance
+ * @param oldScope
  * @param change
  */
-function updateWidget(newInstance: Widget, oldInstance: Widget, change: ChangeCode): void {
+function updateWidget(
+  newInstance: Widget,
+  oldInstance: Widget,
+  oldScope: Scope,
+  change: ChangeCode
+): void {
   if (change.build && !change.other) {
     // 销毁旧作用域
-    oldInstance.renderer.scope?.destroy()
+    oldScope.destroy()
     // 恢复属性
     for (const key in oldInstance) {
-      if (__WidgetIntrinsicProps__.includes(key as any)) continue
+      if (__widgetIntrinsicPropKeywords__.includes(key as any)) continue
       const oldValue = (oldInstance as any)[key]
       // 仅恢复非副作用属性
       if (!isEffect(oldValue)) (newInstance as any)[key] = oldValue
@@ -118,7 +121,7 @@ function updateWidget(newInstance: Widget, oldInstance: Widget, change: ChangeCo
     newInstance.vnode.ref && (newInstance.vnode.ref.value = newInstance)
     // 更新新的子节点到旧子节点
     newInstance.renderer.update(newChild)
-  } else if (change.build || change.other) {
+  } else {
     // 如果是非活跃状态则不更新js逻辑层与数据层的变化
     if (oldInstance.renderer.state !== 'activated') return
     // 创建占位元素
@@ -145,8 +148,6 @@ function updateWidget(newInstance: Widget, oldInstance: Widget, change: ChangeCo
       // 非占位节点用新元素替换占位元素
       parentEl.replaceChild(el, placeholderEl)
     }
-    // 重置小部件实例
-    newInstance.vnode.instance = newInstance
     // 挂载完成
     newInstance.renderer.mount()
   }
