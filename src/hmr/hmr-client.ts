@@ -2,7 +2,6 @@
 
 import {
   createWidgetVNodeInstance,
-  FnWidget,
   isClassWidgetConstructor,
   isEffect,
   type Scope,
