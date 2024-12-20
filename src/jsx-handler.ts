@@ -105,7 +105,6 @@ function getFunctionName(path: FunctionPath): string | null {
 function isRootFunctionWidget(path: FunctionPath) {
   const name = getFunctionName(path)
   if (!name || !isPascalCase(name)) return false
-  if (path.node.async) return false
   return isRootFunction(path)
 }
 
