@@ -1,17 +1,17 @@
 // noinspection JSUnusedGlobalSymbols
 
 import {
+  __widgetIntrinsicPropKeywords__,
   createWidgetVNodeInstance,
   isClassWidgetConstructor,
   isEffect,
   type Scope,
   type VNode,
+  WebRuntimeDom,
   Widget,
   type WidgetType
 } from 'vitarx'
 import type { ModuleNamespace } from 'vite/types/hot.js'
-import { insertBeforeExactly } from 'vitarx/dist/core/renderer/web-runtime-dom/index.js'
-import { __widgetIntrinsicPropKeywords__ } from 'vitarx/dist/core/widget/constant.js'
 import { HmrId } from './constant.js'
 import { type ChangeCode, differenceClassWidgetChange, differenceFnWidgetChange } from './utils.js'
 
@@ -140,10 +140,13 @@ function updateWidgetFull(newInstance: Widget, oldInstance: Widget): void {
   // 如果旧实例使用了传送功能
   if (oldInstance['renderer'].teleport) {
     // 占位节点插入到影子元素之前
-    parentEl = insertBeforeExactly(placeholderEl, oldInstance['renderer'].shadowElement)
+    parentEl = WebRuntimeDom.insertBeforeExactly(
+      placeholderEl,
+      oldInstance['renderer'].shadowElement
+    )
   } else {
     // 占位节点插入到旧元素之前
-    parentEl = insertBeforeExactly(placeholderEl, oldInstance['renderer'].el!)
+    parentEl = WebRuntimeDom.insertBeforeExactly(placeholderEl, oldInstance['renderer'].el!)
   }
   // 卸载旧的组件实例
   oldInstance['renderer'].unmount(true)
