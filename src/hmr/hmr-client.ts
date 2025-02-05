@@ -126,7 +126,8 @@ function updateWidgetBuild(newInstance: Widget, oldInstance: Widget, isClass: bo
   newInstance['renderer']['_teleport'] = oldInstance['renderer']['_teleport']
   // 更新引用
   newInstance['vnode'].ref && (newInstance['vnode'].ref.value = newInstance)
-  if (!isClass) newInstance['renderer'].update()
+  // 更新视图
+  newInstance['renderer'].update()
 }
 
 // 全量更新
