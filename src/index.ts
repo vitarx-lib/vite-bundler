@@ -1,4 +1,4 @@
-import { Plugin, type ResolvedConfig } from 'vite'
+import { mergeConfig, Plugin, type ResolvedConfig } from 'vite'
 import handleJsxOrTsxFileCode from './jsx-handler.js'
 
 /**
@@ -11,16 +11,12 @@ export default function vitarx(): Plugin {
   return {
     name: 'vite-plugin-vitarx',
     config(config) {
-      if (!config.esbuild) {
-        config.esbuild = {
+      return mergeConfig(config, {
+        esbuild: {
           jsx: 'automatic',
           jsxImportSource: 'vitarx'
         }
-      } else {
-        config.esbuild.jsx = 'automatic'
-        config.esbuild.jsxImportSource = 'vitarx'
-      }
-      return config
+      })
     },
     configResolved(config: ResolvedConfig) {
       vite_config = config
