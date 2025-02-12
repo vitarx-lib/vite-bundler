@@ -1,14 +1,14 @@
 {
-  "name": "vite-plugin-vitarx",
-  "version": "1.0.0-beta.14",
-  "description": "VitePluginVitarx 是一个 Vite 插件，用于构建 Vitarx 应用。",
+  "name": "@vitarx/vite-bundler",
+  "version": "1.0.0-beta.15",
+  "description": "vite-bundler 是一个 Vite 插件，用于构建 Vitarx 应用。",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "type": "module",
   "license": "MIT",
   "keywords": [
     "vitarx",
-    "vite-plugin",
+    "@vitarx/vite-bundler",
     "vite-plugin-vitarx"
   ],
   "author": "ZhuChongLin <8210856@qq.com>",
@@ -20,7 +20,7 @@
     "push": "npm publish --access=public"
   },
   "peerDependencies": {
-    "vitarx": "^1.0.0-beta.20",
+    "vitarx": "latest",
     "vite": "^6.0.6"
   },
   "dependencies": {
