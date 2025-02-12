@@ -1,6 +1,8 @@
-import { mergeConfig, Plugin, type ResolvedConfig } from 'vite'
+import { defineConfig, mergeConfig, Plugin, type ResolvedConfig } from 'vite'
 import handleJsxOrTsxFileCode from './jsx-handler.js'
+import * as path from 'node:path'
 
+const __dirname = path.dirname(new URL(import.meta.url).pathname)
 /**
  * ## vite-plugin-vitarx
  *
@@ -11,12 +13,20 @@ export default function vitarx(): Plugin {
   return {
     name: 'vite-plugin-vitarx',
     config(config) {
-      return mergeConfig(config, {
-        esbuild: {
-          jsx: 'automatic',
-          jsxImportSource: 'vitarx'
-        }
-      })
+      return mergeConfig(
+        config,
+        defineConfig({
+          esbuild: {
+            jsx: 'automatic',
+            jsxImportSource: 'vitarx'
+          },
+          resolve: {
+            alias: {
+              '@vitarx/vite-bundler/client': path.resolve(__dirname, 'hmr/hmr-client.js')
+            }
+          }
+        })
+      )
     },
     configResolved(config: ResolvedConfig) {
       vite_config = config
