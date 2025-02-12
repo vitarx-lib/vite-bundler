@@ -11,11 +11,15 @@
     "@vitarx/vite-bundler",
     "vite-plugin-vitarx"
   ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./client": "./dist/hmr/hmr-client.js"
+  },
   "author": "ZhuChongLin <8210856@qq.com>",
   "scripts": {
     "vite:build": "vite build",
     "vite:dev": "vite dev --force",
-    "build": "rimraf dist && tsc && node scripts/index.js",
+    "build": "rimraf dist && tsc",
     "prepublishOnly": "npm run build",
     "push": "npm publish --access=public"
   },
