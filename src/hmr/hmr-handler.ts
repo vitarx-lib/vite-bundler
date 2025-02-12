@@ -1,4 +1,4 @@
-import { type ParseResult, types as t, parseSync } from '@babel/core'
+import { type ParseResult, parseSync, types as t } from '@babel/core'
 import { HmrId } from './constant.js'
 
 let createVNodeDeclarationCache: t.VariableDeclaration | null = null
@@ -123,9 +123,8 @@ let managerDeclarationCache: t.VariableDeclaration | null = null
  * @returns {t.VariableDeclaration} - 模块管理器声明语句
  */
 function createManagerDeclaration(): t.VariableDeclaration {
-  if (!managerDeclarationCache) managerDeclarationCache = t.variableDeclaration(
-    'const',
-    [
+  if (!managerDeclarationCache)
+    managerDeclarationCache = t.variableDeclaration('const', [
       t.variableDeclarator(
         t.identifier(HmrId.manager),
         t.newExpression(
@@ -133,8 +132,7 @@ function createManagerDeclaration(): t.VariableDeclaration {
           []
         )
       )
-    ]
-  )
+    ])
   return managerDeclarationCache
 }
 
@@ -147,10 +145,10 @@ export function importHmrClientDeps(ast: ParseResult) {
   // 如果开发环境，则添加，HMR 热更新处理所需要的依赖
   const injects: t.Statement[] = []
 
-  // 插入 import * as __$hmr$__ from "vite-plugin-vitarx"
+  // 插入 import * as __$hmr$__ from "@vitarx/vite-bundler/client"
   const hmrImportStatement = t.importDeclaration(
     [t.importNamespaceSpecifier(t.identifier(HmrId.hmr))],
-    t.stringLiteral('/src/hmr/hmr-client.ts') // npm run build 时会自动替换为vite-plugin-vitarx/dist/hmr/hmr-client.js
+    t.stringLiteral('@vitarx/vite-bundler/client')
   )
   injects.push(hmrImportStatement)
 
@@ -193,7 +191,7 @@ export function handleFnVariableDeclaration(statement: t.VariableDeclaration, st
       const right = declarator.init
         ? t.parenthesizedExpression(declarator.init)
         : t.identifier('undefined') // 如果没有初始化值，使用 'undefined'
-      
+
       // 创建新的表达式，使用 `??` 操作符
       declarator.init = t.logicalExpression('??', left, right)
 
@@ -201,7 +199,6 @@ export function handleFnVariableDeclaration(statement: t.VariableDeclaration, st
     }
   }
 }
-
 
 // 添加私有属性 #__$register$__
 export const injectClassWidgetHmrHandler = t.classPrivateProperty(
@@ -258,5 +255,3 @@ export function injectFnWidgetHmrHandler(block: t.BlockStatement, states: Set<st
     stateMount
   )
 }
-
-
