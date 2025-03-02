@@ -44,18 +44,6 @@ export function getState(vnode: VNODE, name: string) {
 }
 
 /**
- * 获取模块
- *
- * @param name
- * @param mod
- */
-function getModule(name: string, mod: ModuleNamespace) {
-  if (name in mod) return mod[name]
-  if (mod.default?.name === name) return mod.default
-  return undefined
-}
-
-/**
  * 处理热更新
  *
  * @param vnode
@@ -70,6 +58,15 @@ function handleHmrUpdate(vnode: VNODE, newModule: WidgetType) {
   let change: ChangeCode
   const isClass = isClassWidgetConstructor(vnode.type)
   if (isClass) {
+    // 恢复静态属性
+    for (const key of Object.keys(oldModule)) {
+      if (key in newModule) {
+        const descriptor = Object.getOwnPropertyDescriptor(newModule, key)
+        if (descriptor && descriptor.writable) {
+          Reflect.set(newModule, key, Reflect.get(oldModule, key))
+        }
+      }
+    }
     change = differenceClassWidgetChange(newModule.toString(), oldModule.toString())
     if (!change.other) vnode[HmrId.state] = {}
   } else {
@@ -116,6 +113,8 @@ function updateWidgetBuild(newInstance: Widget, oldInstance: Widget, isClass: bo
       if (!isEffect(oldValue)) (newInstance as any)[key] = oldValue
     }
   }
+  // 新子节点
+  const newChild = newInstance['renderer'].child
   // 恢复旧的子节点
   newInstance['renderer']['_child'] = oldInstance['renderer'].child
   // 恢复渲染器状态
@@ -127,7 +126,7 @@ function updateWidgetBuild(newInstance: Widget, oldInstance: Widget, isClass: bo
   // 更新引用
   newInstance['vnode'].ref && (newInstance['vnode'].ref.value = newInstance)
   // 更新视图
-  newInstance['renderer'].update()
+  newInstance['renderer'].update(newChild)
 }
 
 // 全量更新
@@ -169,7 +168,14 @@ function updateWidgetFull(newInstance: Widget, oldInstance: Widget): void {
  * 模块依赖管理器
  */
 export class ModuleManager {
-  active: Map<string, Set<VNODE>> = new Map()
+  /**
+   * 激活的模块
+   *
+   * 文件名 -> 组件名 -> 组件虚拟节点集合
+   *
+   * @private
+   */
+  private active: Map<string, Set<VNODE>> = new Map()
 
   /**
    * 注册节点
@@ -177,11 +183,11 @@ export class ModuleManager {
    * @param vnode
    */
   register(vnode: VNODE) {
-    const widget = vnode.type.name
-    if (this.active.has(widget)) {
-      this.active.get(widget)!.add(vnode)
+    const modName = vnode.type.name
+    if (this.active.has(modName)) {
+      this.active.get(modName)!.add(vnode)
     } else {
-      this.active.set(widget, new Set([vnode]))
+      this.active.set(modName, new Set([vnode]))
     }
   }
 
@@ -193,7 +199,7 @@ export class ModuleManager {
   update(mod: ModuleNamespace | undefined) {
     if (!mod) return 'module not found'
     for (const [name, nodes] of this.active) {
-      const newModule = getModule(name, mod)
+      const newModule = this.getModule(name, mod)
       if (!newModule) continue
       for (const node of nodes) {
         // 缓存新的组件构造函数
@@ -201,5 +207,18 @@ export class ModuleManager {
         handleHmrUpdate(node, newModule)
       }
     }
+  }
+
+  /**
+   * 获取模块
+   *
+   * @param name
+   * @param mod
+   * @private
+   */
+  private getModule(name: string, mod: ModuleNamespace) {
+    if (name in mod) return mod[name]
+    if (mod.default?.name === name) return mod.default
+    return undefined
   }
 }
