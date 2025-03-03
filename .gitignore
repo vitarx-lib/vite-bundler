@@ -10,7 +10,3 @@ package-lock.json
 /dist
 /tests
 /testDist
-index.html
-main.tsx
-vite.config.ts
-/main.ts
