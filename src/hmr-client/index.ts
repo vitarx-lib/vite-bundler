@@ -1,4 +1,4 @@
-import { isEffect, type WidgetType } from 'vitarx'
+import { isEffect, type VNode, type WidgetType } from 'vitarx'
 import type { ModuleNamespace } from 'vite/types/hot.js'
 import { HmrId } from './constant.js'
 import handleHmrUpdate, { type VNODE } from './update.js'
@@ -45,15 +45,16 @@ export default class ModuleManager {
   /**
    * 注册节点
    *
-   * @param vnode
+   * @param vnode - 节点
+   * @param [module] - 节点对应的模块，不传默认为`vnode.type`
    */
-  register(vnode: VNODE) {
+  register(vnode: VNode<WidgetType>, module?: WidgetType) {
     if (!vnode) return
-    const modName = this.getModuleId(vnode.type)
-    if (this.#idMapToNode.has(modName)) {
-      this.#idMapToNode.get(modName)!.add(vnode)
+    const modId = this.getModuleId(module ?? vnode.type)
+    if (this.#idMapToNode.has(modId)) {
+      this.#idMapToNode.get(modId)!.add(vnode as VNODE)
     } else {
-      this.#idMapToNode.set(modName, new Set([vnode]))
+      this.#idMapToNode.set(modId, new Set([vnode as VNODE]))
     }
   }
 
@@ -69,9 +70,11 @@ export default class ModuleManager {
       const newModule = mod[modKey]
       // 模块id
       const moduleId = this.getModuleId(newModule)
+      // 模块ID不存在，跳过
+      if (!moduleId) continue
       // 模块活跃的虚拟节点集合
       const nodes = this.#idMapToNode.get(moduleId)
-      // 模块不存在，则跳过
+      // 模块不存在，跳过
       if (!nodes) continue
       for (const node of nodes) {
         // 更新模块
