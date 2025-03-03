@@ -1,6 +1,6 @@
 {
   "name": "@vitarx/vite-bundler",
-  "version": "1.0.0-beta.16",
+  "version": "1.0.0-beta.17",
   "description": "vite-bundler 是一个 Vite 插件，用于构建 Vitarx 应用。",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -13,7 +13,7 @@
   ],
   "exports": {
     ".": "./dist/index.js",
-    "./client": "./dist/hmr/hmr-client.js"
+    "./client": "./dist/hmr-client/index.js"
   },
   "author": "ZhuChongLin <8210856@qq.com>",
   "scripts": {
