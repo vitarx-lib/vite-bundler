@@ -73,7 +73,6 @@ export default class ModuleManager {
       // 模块不存在，则跳过
       if (!nodes) continue
       for (const node of nodes) {
-        console.log(node)
         // 更新模块
         this.updateModule(newModule)
         // 更新节点视图
