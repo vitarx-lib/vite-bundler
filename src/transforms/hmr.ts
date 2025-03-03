@@ -128,18 +128,49 @@ class StaticUtils {
   }
 
   /**
+   * VNode节点声明语句
+   *
+   * @constructor
+   */
+  static get VNodeDeclaration(): t.VariableDeclaration {
+    if (!this.cache.has('VNodeDeclaration')) {
+      const createVNodeDeclaration = t.variableDeclaration('const', [
+        t.variableDeclarator(
+          t.identifier(HmrId.vnode),
+          t.callExpression(t.identifier('getCurrentVNode'), [])
+        )
+      ])
+      this.cache.set('VNodeDeclaration', createVNodeDeclaration)
+    }
+    return this.cache.get('VNodeDeclaration')
+  }
+
+  /**
+   * 注册处理语句
+   */
+  static get hmrRegisterExpr() {
+    if (!this.cache.has('hmrRegister')) {
+      const hmrRegisterHandler = t.callExpression(
+        t.memberExpression(
+          t.memberExpression(t.identifier(HmrId.hmr), t.identifier('instance')),
+          t.identifier('register')
+        ),
+        [t.identifier(HmrId.vnode)]
+      )
+      this.cache.set('hmrRegister', hmrRegisterHandler)
+    }
+
+    return this.cache.get('hmrRegister')
+  }
+
+  /**
    * 注入函数组件状态
    *
    * @param block - 函数组件的函数体
    * @param states - 状态名称集合
-   * @param isSimple - 是否为简单组件
    */
-  static injectFnWidgetHmrState(block: t.BlockStatement, states: Set<string>, isSimple: boolean) {
+  static injectFnWidgetHmrState(block: t.BlockStatement, states: Set<string>) {
     if (process.env.NODE_ENV !== 'development') return
-    if (isSimple) {
-      block.body.unshift(this.VNodeDeclaration(), this.hmrRegister())
-      return
-    }
     // 动态生成状态对象 getter
     const stateProperties = Array.from(states).map(stateName => {
       return t.objectMethod(
@@ -173,41 +204,29 @@ class StaticUtils {
       ]
     )
     block.body.unshift(
-      this.VNodeDeclaration(),
-      this.hmrRegister(),
+      this.VNodeDeclaration,
+      this.hmrRegisterExpr,
       t.expressionStatement(t.logicalExpression('&&', t.identifier(HmrId.vnode), mount))
     )
   }
 
-  static VNodeDeclaration(): t.VariableDeclaration {
-    if (!this.cache.has('VNodeDeclaration')) {
-      const createVNodeDeclaration = t.variableDeclaration('const', [
-        t.variableDeclarator(
-          t.identifier(HmrId.vnode),
-          t.callExpression(t.identifier('getCurrentVNode'), [])
-        )
-      ])
-      this.cache.set('VNodeDeclaration', createVNodeDeclaration)
-    }
-    return this.cache.get('VNodeDeclaration')
-  }
-
   /**
-   * 注册处理语句
+   * 创建简单热更新注册语句
+   *
+   * @param moduleName
    */
-  static hmrRegister() {
-    if (!this.cache.has('hmrRegister')) {
-      const hmrRegisterHandler = t.callExpression(
+  static createSimpleHmrRegisterExpr(moduleName: string) {
+    if (moduleName) {
+      return t.callExpression(
         t.memberExpression(
           t.memberExpression(t.identifier(HmrId.hmr), t.identifier('instance')),
           t.identifier('register')
         ),
-        [t.identifier(HmrId.vnode)]
+        [t.identifier(HmrId.vnode), t.identifier(moduleName)]
       )
-      this.cache.set('hmrRegister', hmrRegisterHandler)
+    } else {
+      return this.hmrRegisterExpr
     }
-
-    return this.cache.get('hmrRegister')
   }
 }
 
@@ -243,37 +262,42 @@ function handleExportDefaultDeclaration(this: Option, path: NodePath<t.ExportDef
   if (t.isIdentifier(declaration)) {
     // 处理 export default foo
     StaticUtils.injectHmrIdDefine(path, declaration.name, this.filename)
-  } else if (
-    t.isFunctionDeclaration(declaration) ||
-    t.isClassDeclaration(declaration) ||
-    t.isArrowFunctionExpression(declaration)
-  ) {
+  } else {
     // 处理 export default function() {} / export default class {} / export default () => {}
     const uniqueVar = path.scope.generateUidIdentifier('defaultExport')
     // 将 ClassDeclaration 或 FunctionDeclaration 转换为相应的表达式
-    let expr: t.Expression
-    if (t.isFunctionDeclaration(declaration)) {
-      expr = t.functionExpression(
-        declaration.id,
-        declaration.params,
-        declaration.body,
-        declaration.generator,
-        declaration.async
-      )
-    } else if (t.isClassDeclaration(declaration)) {
-      expr = t.classExpression(
-        declaration.id,
-        declaration.superClass,
-        declaration.body,
-        declaration.decorators
-      )
-    } else {
-      expr = t.arrowFunctionExpression(declaration.params, declaration.body, declaration.async)
+    let expr: t.Expression | null = null
+    switch (declaration.type) {
+      case 'ArrowFunctionExpression':
+        expr = t.arrowFunctionExpression(declaration.params, declaration.body, declaration.async)
+        break
+      case 'FunctionDeclaration':
+        expr = t.functionExpression(
+          declaration.id,
+          declaration.params,
+          declaration.body,
+          declaration.generator,
+          declaration.async
+        )
+        break
+      case 'ClassDeclaration':
+        expr = t.classExpression(
+          declaration.id,
+          declaration.superClass,
+          declaration.body,
+          declaration.decorators
+        )
+        break
+      case 'CallExpression':
+        expr = t.callExpression(declaration.callee, declaration.arguments)
+        break
     }
-    path.replaceWithMultiple([
-      t.variableDeclaration('const', [t.variableDeclarator(uniqueVar, expr)]),
-      t.exportDefaultDeclaration(uniqueVar)
-    ])
+    if (expr) {
+      path.replaceWithMultiple([
+        t.variableDeclaration('const', [t.variableDeclarator(uniqueVar, expr)]),
+        t.exportDefaultDeclaration(uniqueVar)
+      ])
+    }
   }
 }
 
@@ -345,29 +369,41 @@ function handleFunctionDeclaration(path: NodePath<FunctionNode>) {
   // 1. 确保函数是根节点
   if (isRoot) {
     const isDev = process.env.NODE_ENV === 'development'
-    // 2. 获取函数的 body
-    const block = path.node.body as t.BlockStatement
-    // 3. 确保 body 是 BlockStatement 类型
-    if (block.type === 'BlockStatement') {
-      const states: Set<string> = new Set()
-      // 4. 遍历 body 处理语句
+
+    // 2. 确保 函数体是块级语句
+    if (!t.isBlockStatement(path.node.body)) {
+      path.node.body = t.blockStatement([t.returnStatement(path.node.body)])
+    }
+    const block = path.node.body
+    const states: Set<string> = new Set()
+    if (isRoot !== 'simple') {
+      // 3. 遍历 body 处理语句
       for (let i = 0; i < block.body.length; i++) {
         const statement = block.body[i]
         if (t.isReturnStatement(statement)) {
-          // 5. 处理返回值（可以是 JSX 或其他）
+          // 4. 处理返回值（可以是 JSX 或其他）
           const newStatement = handleJsxReturn(statement)
           // 判断是否需要替换
           if (newStatement !== statement) {
             // 替换语句，直接修改 body 数组中的元素
             block.body[i] = newStatement
           }
-        } else if (t.isVariableDeclaration(statement) && isDev && isRoot !== 'simple') {
-          // 6. 开发模式，处理变量声明，挂载状态
+        } else if (t.isVariableDeclaration(statement) && isDev) {
+          // 5. 开发模式，处理变量声明，挂载状态
           handleFnVariableDeclaration(statement, states)
         }
       }
-      // 7. 开发模式，注入函数状态挂载程序
-      isDev && StaticUtils.injectFnWidgetHmrState(block, states, isRoot === 'simple')
+    }
+    if (isDev) {
+      if (isRoot === 'simple') {
+        // 此时的函数声明应该是 const xxx = simple(() => {})
+        // @ts-ignore
+        const moduleName = path.parentPath?.parentPath?.node?.id?.name
+        const hmrRegister = StaticUtils.createSimpleHmrRegisterExpr(moduleName)
+        block.body.unshift(StaticUtils.VNodeDeclaration, hmrRegister)
+      } else {
+        StaticUtils.injectFnWidgetHmrState(block, states)
+      }
     }
   }
 }
