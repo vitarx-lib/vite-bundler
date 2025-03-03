@@ -113,8 +113,12 @@ function separateLogicAndRender(functionCode: string): SeparationResult {
  */
 export function differenceFnWidgetChange(newCode: string, oldCode: string): ChangeCode {
   // 提取新旧函数的顶级 return 语句
-  const { renderCode: newRenderCode, logicCode: newLogicCode } = separateLogicAndRender(newCode)
-  const { renderCode: oldRenderCode, logicCode: oldLogicCode } = separateLogicAndRender(oldCode)
+  const { renderCode: newRenderCode, logicCode: newLogicCode } = separateLogicAndRender(
+    `(${newCode})`
+  )
+  const { renderCode: oldRenderCode, logicCode: oldLogicCode } = separateLogicAndRender(
+    `(${oldCode})`
+  )
   return {
     build: newRenderCode !== oldRenderCode,
     other: newLogicCode !== oldLogicCode

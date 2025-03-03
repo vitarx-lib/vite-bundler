@@ -1,6 +1,6 @@
 import { defineConfig, mergeConfig, Plugin, type ResolvedConfig } from 'vite'
-import handleJsxOrTsxFileCode from './jsx-handler.js'
 import * as path from 'node:path'
+import transform from './transforms/index.js'
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname)
 /**
@@ -22,7 +22,7 @@ export default function vitarx(): Plugin {
           },
           resolve: {
             alias: {
-              '@vitarx/vite-bundler/client': path.resolve(__dirname, 'hmr/hmr-client.js')
+              '@vitarx/vite-bundler/client': path.resolve(__dirname, 'hmr-client/index.js')
             }
           }
         })
@@ -32,13 +32,7 @@ export default function vitarx(): Plugin {
       vite_config = config
     },
     transform(code, id) {
-      // 仅处理 .jsx 或 .tsx 文件
-      if (id.endsWith('.jsx') || id.endsWith('.tsx')) {
-        return handleJsxOrTsxFileCode(code, {
-          sourceMaps: vite_config.build.sourcemap !== 'hidden',
-          sourceFileName: id
-        })
-      }
+      return transform(code, id, vite_config)
     }
   }
 }
