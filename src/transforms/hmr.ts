@@ -130,11 +130,16 @@ class StaticUtils {
   /**
    * 注入函数组件状态
    *
-   * @param block
-   * @param states
+   * @param block - 函数组件的函数体
+   * @param states - 状态名称集合
+   * @param isSimple - 是否为简单组件
    */
-  static injectFnWidgetHmrState(block: t.BlockStatement, states: Set<string>) {
+  static injectFnWidgetHmrState(block: t.BlockStatement, states: Set<string>, isSimple: boolean) {
     if (process.env.NODE_ENV !== 'development') return
+    if (isSimple) {
+      block.body.unshift(this.VNodeDeclaration(), this.hmrRegister())
+      return
+    }
     // 动态生成状态对象 getter
     const stateProperties = Array.from(states).map(stateName => {
       return t.objectMethod(
@@ -336,8 +341,9 @@ function handleJsxReturn(returnNode: t.ReturnStatement): t.ReturnStatement {
  * @param path
  */
 function handleFunctionDeclaration(path: NodePath<FunctionNode>) {
+  const isRoot = isRootFunction(path)
   // 1. 确保函数是根节点
-  if (isRootFunction(path)) {
+  if (isRoot) {
     const isDev = process.env.NODE_ENV === 'development'
     // 2. 获取函数的 body
     const block = path.node.body as t.BlockStatement
@@ -355,13 +361,13 @@ function handleFunctionDeclaration(path: NodePath<FunctionNode>) {
             // 替换语句，直接修改 body 数组中的元素
             block.body[i] = newStatement
           }
-        } else if (t.isVariableDeclaration(statement) && isDev) {
+        } else if (t.isVariableDeclaration(statement) && isDev && isRoot !== 'simple') {
           // 6. 开发模式，处理变量声明，挂载状态
           handleFnVariableDeclaration(statement, states)
         }
       }
       // 7. 开发模式，注入函数状态挂载程序
-      isDev && StaticUtils.injectFnWidgetHmrState(block, states)
+      isDev && StaticUtils.injectFnWidgetHmrState(block, states, isRoot === 'simple')
     }
   }
 }

@@ -22,26 +22,39 @@ export function isRootDeclaration(path: NodePath) {
  *
  * @param path - 函数路径
  */
-export function isRootFunction(path: NodePath<FunctionNode>): boolean {
+export function isRootFunction(
+  path: NodePath<FunctionNode>
+): boolean | 'simple' | 'defineAsyncWidget' {
   if (path.type === 'FunctionDeclaration') {
     return isRootDeclaration(path.parentPath)
   }
   if (path.parentPath.isCallExpression() && t.isIdentifier(path.parentPath.node.callee)) {
     const callName = path.parentPath.node.callee
-    if (callName.name === 'defineAsyncWidget') {
-      // 检查 defineAsyncWidget 是否从 vitarx 包中导入
-      const binding = path.scope.getBinding('defineAsyncWidget')
-      if (binding && binding.path.parentPath?.isImportDeclaration()) {
-        const importDeclaration = binding.path.parentPath.node as t.ImportDeclaration
-        if (importDeclaration.source.value === 'vitarx') {
-          return true
-        }
+    if (callName.name === 'defineAsyncWidget' || callName.name === 'simple') {
+      if (isImportedFromVitarx(path, callName.name)) {
+        return callName.name
       }
     }
   }
   // 匿名函数 或 箭头函数
   if (path.parentPath.type === 'VariableDeclarator' && path.parentPath.parentPath?.parentPath) {
     return isRootDeclaration(path.parentPath.parentPath?.parentPath)
+  }
+  return false
+}
+
+/**
+ * 检查函数是否从 vitarx 包中导入
+ *
+ * @param path - 函数路径
+ * @param functionName - 函数名称
+ * @returns {boolean} - 是否从 vitarx 包中导入
+ */
+function isImportedFromVitarx(path: NodePath<FunctionNode>, functionName: string): boolean {
+  const binding = path.scope.getBinding(functionName)
+  if (binding && binding.path.parentPath?.isImportDeclaration()) {
+    const importDeclaration = binding.path.parentPath.node as t.ImportDeclaration
+    return importDeclaration.source.value === 'vitarx'
   }
   return false
 }

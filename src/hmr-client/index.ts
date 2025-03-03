@@ -48,6 +48,7 @@ export default class ModuleManager {
    * @param vnode
    */
   register(vnode: VNODE) {
+    if (!vnode) return
     const modName = this.getModuleId(vnode.type)
     if (this.#idMapToNode.has(modName)) {
       this.#idMapToNode.get(modName)!.add(vnode)
