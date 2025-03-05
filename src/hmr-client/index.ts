@@ -1,7 +1,7 @@
 import { isEffect, type VNode, type WidgetType } from 'vitarx'
 import type { ModuleNamespace } from 'vite/types/hot.js'
 import { HmrId } from './constant.js'
-import handleHmrUpdate, { type VNODE } from './update.js'
+import handleHmrUpdate from './update.js'
 
 declare global {
   interface Window {
@@ -18,7 +18,7 @@ export default class ModuleManager {
    *
    * 模块id -> 组件虚拟节点集合，包含活跃的虚拟节点
    */
-  #idMapToNode: Map<string, Set<VNODE>> = new Map()
+  #idMapToNode: Map<string, Set<VNode<WidgetType>>> = new Map()
 
   /**
    * id映射到组件构造函数
@@ -52,14 +52,16 @@ export default class ModuleManager {
     if (!vnode) return
     const modId = this.getModuleId(module ?? vnode.type)
     if (this.#idMapToNode.has(modId)) {
-      this.#idMapToNode.get(modId)!.add(vnode as VNODE)
+      this.#idMapToNode.get(modId)!.add(vnode)
     } else {
-      this.#idMapToNode.set(modId, new Set([vnode as VNODE]))
+      this.#idMapToNode.set(modId, new Set([vnode]))
     }
   }
 
   /**
    * 更新节点
+   *
+   * 此方法提供给es模块内调用
    *
    * @param mod
    */
@@ -95,19 +97,9 @@ export default class ModuleManager {
   }
 
   /**
-   * 根据id获取模块
-   *
-   * @param id
-   */
-  getModuleById(id: string): WidgetType | undefined {
-    return this.idMapToModule.get(id)
-  }
-
-  /**
    * 置换新模块
    *
    * 此方法提供给`jsxDev`函数调用，保持每次创建组件实例都是最新的模块！
-   *
    * @param mod
    */
   replaceNewModule(mod: WidgetType): WidgetType {
@@ -118,10 +110,10 @@ export default class ModuleManager {
   /**
    * 函数组件恢复状态
    *
-   * @param {VNODE} vnode - 函数组件虚拟节点
+   * @param {VNode<WidgetType>} vnode - 函数组件虚拟节点
    * @param {string} name - 组件状态名
    */
-  getState(vnode: VNODE, name: string) {
+  getState(vnode: VNode<WidgetType>, name: string) {
     const state = vnode?.[HmrId.state]?.[name]
     // 如果是副作用，则丢弃。
     if (state && isEffect(state)) return undefined
@@ -149,23 +141,5 @@ export default class ModuleManager {
   private updateModule(newMod: WidgetType) {
     const id = this.getModuleId(newMod)
     if (id) this.idMapToModule.set(id, newMod)
-  }
-
-  /**
-   * 获取模块
-   *
-   * @param name
-   * @param mod
-   * @private
-   */
-  private getModule(name: string, mod: ModuleNamespace): WidgetType | undefined {
-    let newModule: WidgetType | undefined
-    const oldModule = this.idMapToModule.get(name)
-    if (name in mod) {
-      newModule = mod[name]
-    } else if (mod.default?.name === name) {
-      newModule = mod.default
-    }
-    return typeof newModule === 'function' ? newModule : undefined
   }
 }
