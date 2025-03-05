@@ -4,18 +4,12 @@ import {
   createWidgetVNodeInstance,
   isClassWidgetConstructor,
   isEffect,
-  type Scope,
   type VNode,
   WebRuntimeDom,
   type Widget,
   type WidgetType
 } from 'vitarx'
 import { HmrId } from './constant.js'
-
-export type VNODE<T extends WidgetType = WidgetType> = VNode<T> & {
-  [HmrId.state]?: Record<string, any>
-  scope: Scope
-}
 
 /**
  * 更新小部件实例
@@ -109,7 +103,7 @@ function updateWidgetFull(newInstance: Widget, oldInstance: Widget): void {
  * @param vnode
  * @param newModule
  */
-export default function handleHmrUpdate(vnode: VNODE, newModule: WidgetType) {
+export default function handleHmrUpdate(vnode: VNode<WidgetType>, newModule: WidgetType) {
   const oldModule = vnode.type
   // 更新虚拟节点中的组件构造函数
   vnode.type = newModule
