@@ -1,6 +1,6 @@
 {
   "name": "@vitarx/vite-bundler",
-  "version": "1.0.0-beta.18",
+  "version": "1.0.0",
   "description": "vite-bundler 是一个 Vite 插件，用于构建 Vitarx 应用。",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -24,8 +24,8 @@
     "push": "npm publish --access=public"
   },
   "peerDependencies": {
-    "vitarx": "latest",
-    "vite": "^6.0.6"
+    "vitarx": "^1.0.2",
+    "vite": "^6.0.0"
   },
   "dependencies": {
     "@babel/core": "^7.26.0",
