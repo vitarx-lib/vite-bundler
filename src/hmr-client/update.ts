@@ -104,33 +104,40 @@ function updateWidgetFull(newInstance: Widget, oldInstance: Widget): void {
  * @param newModule
  */
 export default function handleHmrUpdate(vnode: VNode<WidgetType>, newModule: WidgetType) {
-  const oldModule = vnode.type
-  // 更新虚拟节点中的组件构造函数
-  vnode.type = newModule
-  // 如果节点没有渲染，或节点已销毁，则跳过
-  if (!vnode.instance || ['unloaded', 'uninstalling'].includes(vnode.instance['renderer'].state)) {
-    return
-  }
-  const oldInstance = vnode.instance
-  let change: ChangeCode
-  const isClass = isClassWidgetConstructor(vnode.type)
-  if (isClass) {
-    // 恢复静态属性
-    for (const key of Object.keys(oldModule)) {
-      if (key in newModule) {
-        const descriptor = Object.getOwnPropertyDescriptor(newModule, key)
-        if (descriptor && descriptor.writable) {
-          Reflect.set(newModule, key, Reflect.get(oldModule, key))
+  try {
+    const oldModule = vnode.type
+    // 更新虚拟节点中的组件构造函数
+    vnode.type = newModule
+    // 如果节点没有渲染，或节点已销毁，则跳过
+    if (
+      !vnode.instance ||
+      ['unloaded', 'uninstalling'].includes(vnode.instance['renderer'].state)
+    ) {
+      return
+    }
+    const oldInstance = vnode.instance
+    let change: ChangeCode
+    const isClass = isClassWidgetConstructor(vnode.type)
+    if (isClass) {
+      // 恢复静态属性
+      for (const key of Object.keys(oldModule)) {
+        if (key in newModule) {
+          const descriptor = Object.getOwnPropertyDescriptor(newModule, key)
+          if (descriptor && descriptor.writable) {
+            Reflect.set(newModule, key, Reflect.get(oldModule, key))
+          }
         }
       }
+      change = differenceClassWidgetChange(newModule.toString(), oldModule.toString())
+      if (!change.other) vnode[HmrId.state] = {}
+    } else {
+      change = differenceFnWidgetChange(newModule.toString(), oldModule.toString())
     }
-    change = differenceClassWidgetChange(newModule.toString(), oldModule.toString())
-    if (!change.other) vnode[HmrId.state] = {}
-  } else {
-    change = differenceFnWidgetChange(newModule.toString(), oldModule.toString())
+    if (change.other) delete vnode[HmrId.state]
+    createWidgetVNodeInstance(vnode, newInstance => {
+      updateWidget(newInstance, oldInstance, change, isClass)
+    })
+  } catch (e) {
+    console.error('[VitarxViteBundler]：热更新模块时捕获到异常', e)
   }
-  if (change.other) delete vnode[HmrId.state]
-  createWidgetVNodeInstance(vnode, newInstance => {
-    updateWidget(newInstance, oldInstance, change, isClass)
-  })
 }
