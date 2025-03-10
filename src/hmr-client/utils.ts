@@ -63,14 +63,17 @@ export function differenceClassWidgetChange(newCode: string, oldCode: string): C
  */
 function separateLogicAndRender(functionCode: string): SeparationResult {
   const jsxNodes: string[] = []
-
-  // 去除注释
-  const noCommentsCode = functionCode.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
-
+  // 添加括号，兼容匿名函数解析
+  functionCode = `(${functionCode})`
   // 解析代码为 AST
-  const ast = parse(noCommentsCode, {
+  const ast = parse(functionCode, {
     ecmaVersion: 'latest',
-    sourceType: 'module'
+    sourceType: 'module',
+    allowReturnOutsideFunction: true, // 允许在函数外使用 return
+    allowAwaitOutsideFunction: true, // 允许在函数外使用 await
+    allowImportExportEverywhere: true, // 允许在任何地方使用 import/export
+    allowHashBang: true, // 允许 Shebang
+    allowReserved: true // 允许使用保留字作为标识符
   })
 
   // 遍历 AST，提取 jsxDEV 调用
@@ -78,7 +81,7 @@ function separateLogicAndRender(functionCode: string): SeparationResult {
     if (node.type === 'CallExpression' && node.callee.name === 'jsxDEV') {
       const start = node.start
       const end = node.end
-      jsxNodes.push(noCommentsCode.slice(start, end)) // 提取 jsxDEV 的源码
+      jsxNodes.push(functionCode.slice(start, end)) // 提取 jsxDEV 的源码
     }
     // 递归处理子节点
     Object.values(node).forEach(child => {
@@ -93,7 +96,7 @@ function separateLogicAndRender(functionCode: string): SeparationResult {
   extractJSX(ast)
 
   // 去除逻辑代码中的 jsxDEV
-  let logicCode = noCommentsCode
+  let logicCode = functionCode
   jsxNodes.forEach(jsx => {
     logicCode = logicCode.replace(jsx, '') // 替换掉所有的 jsxDEV 调用
   })
@@ -113,12 +116,8 @@ function separateLogicAndRender(functionCode: string): SeparationResult {
  */
 export function differenceFnWidgetChange(newCode: string, oldCode: string): ChangeCode {
   // 提取新旧函数的顶级 return 语句
-  const { renderCode: newRenderCode, logicCode: newLogicCode } = separateLogicAndRender(
-    `(${newCode})`
-  )
-  const { renderCode: oldRenderCode, logicCode: oldLogicCode } = separateLogicAndRender(
-    `(${oldCode})`
-  )
+  const { renderCode: newRenderCode, logicCode: newLogicCode } = separateLogicAndRender(newCode)
+  const { renderCode: oldRenderCode, logicCode: oldLogicCode } = separateLogicAndRender(oldCode)
   return {
     build: newRenderCode !== oldRenderCode,
     other: newLogicCode !== oldLogicCode
