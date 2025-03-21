@@ -1,4 +1,4 @@
-import { AppRenderer, createApp } from 'vitarx'
+import { App as AppRenderer, createApp } from 'vitarx'
 import App from './__TEST__/app.js'
 
 createApp('#root').render(App)
