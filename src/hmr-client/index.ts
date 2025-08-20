@@ -1,13 +1,7 @@
-import { isEffect, type VNode, type WidgetType } from 'vitarx'
+import { isEffect, type WidgetType, type WidgetVNode } from 'vitarx'
 import type { ModuleNamespace } from 'vite/types/hot.js'
 import { HmrId } from './constant.js'
 import handleHmrUpdate from './update.js'
-
-declare global {
-  interface Window {
-    [HmrId.hmr]: ModuleManager
-  }
-}
 
 /**
  * 模块依赖管理器
@@ -16,9 +10,9 @@ export default class ModuleManager {
   /**
    * id模块映射到组件虚拟节点集合
    *
-   * 模块id -> 组件虚拟节点集合，包含活跃的虚拟节点
+   * 模块id -> 组件虚拟节点集T extends Window & typeof globalThis，包含活跃的虚拟节点
    */
-  #idMapToNode: Map<string, Set<VNode<WidgetType>>> = new Map()
+  #idMapToNode: Map<string, Set<WidgetVNode>> = new Map()
 
   /**
    * id映射到组件构造函数
@@ -30,7 +24,7 @@ export default class ModuleManager {
    */
   static get instance() {
     if (!window[HmrId.hmr]) {
-      window[HmrId.hmr] = new ModuleManager()
+      ;(window as any)[HmrId.hmr] = new ModuleManager()
     }
     return window[HmrId.hmr]
   }
@@ -48,7 +42,7 @@ export default class ModuleManager {
    * @param vnode - 节点
    * @param [module] - 节点对应的模块，不传默认为`vnode.type`
    */
-  register(vnode: VNode<WidgetType>, module?: WidgetType) {
+  register(vnode: WidgetVNode, module?: WidgetType) {
     if (!vnode) return
     const modId = this.getModuleId(module ?? vnode.type)
     if (this.#idMapToNode.has(modId)) {
@@ -110,10 +104,10 @@ export default class ModuleManager {
   /**
    * 函数组件恢复状态
    *
-   * @param {VNode<WidgetType>} vnode - 函数组件虚拟节点
+   * @param {WidgetVNode} vnode - 函数组件虚拟节点
    * @param {string} name - 组件状态名
    */
-  getState(vnode: VNode<WidgetType>, name: string) {
+  getState(vnode: WidgetVNode, name: string) {
     const state = vnode?.[HmrId.state]?.[name]
     // 如果是副作用，则丢弃。
     if (state && isEffect(state)) return undefined
