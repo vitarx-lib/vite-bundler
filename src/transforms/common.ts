@@ -1,6 +1,7 @@
 import { type ParseResult, types as t } from '@babel/core'
 import type { NodePath } from '@babel/traverse'
 import generator, { type GeneratorOptions, type GeneratorResult } from '@babel/generator'
+import type { MakeRequired } from '@vitarx/utils'
 
 export type Option = MakeRequired<GeneratorOptions, 'filename'>
 // 函数节点
