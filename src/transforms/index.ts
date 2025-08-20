@@ -3,6 +3,7 @@ import { type GeneratorOptions } from '@babel/generator'
 import type { ResolvedConfig } from 'vite'
 import hmrOrBuildTransform from './hmr.js'
 import { babelGenerate, type Option } from './common.js'
+import type { MakeRequired } from '@vitarx/utils'
 // 处理结果
 type HandleResult = {
   code: string
