@@ -12,3 +12,7 @@ package-lock.json
 /testDist
 __tests__/__snapshots__
 pnpm-lock.yaml
+
+# IDE files
+.idea/
+.DS_Store
