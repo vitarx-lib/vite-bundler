@@ -17,7 +17,7 @@ type HandleResult = {
  * @param options - babel generator 选项
  * @returns {HandleResult} - 处理后的代码
  */
-export function handleJsxOrTsxFileCode(code: string, options: Option): HandleResult | undefined {
+function handleJsxOrTsxFileCode(code: string, options: Option): HandleResult | undefined {
   // 使用 Babel 解析源码为 AST
   const ast = parseSync(code)
   if (ast && ast.program) {
@@ -31,6 +31,13 @@ export function handleJsxOrTsxFileCode(code: string, options: Option): HandleRes
   return undefined
 }
 
+/**
+ * 转换器
+ *
+ * @param code
+ * @param id
+ * @param viteConfig
+ */
 export default function transform(code: string, id: string, viteConfig: ResolvedConfig) {
   const buildOption: MakeRequired<GeneratorOptions, 'filename'> = {
     sourceMaps: viteConfig.build.sourcemap !== 'hidden',
