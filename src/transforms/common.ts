@@ -1,4 +1,4 @@
-import { type ParseResult, types as t } from '@babel/core'
+import { types as t } from '@babel/core'
 import type { NodePath } from '@babel/traverse'
 import generator, { type GeneratorOptions, type GeneratorResult } from '@babel/generator'
 import type { MakeRequired } from '@vitarx/utils'
@@ -20,42 +20,103 @@ export function isRootDeclaration(path: NodePath) {
 
 /**
  * 判断是否是顶级函数
- *
+ * 该函数用于判断给定的函数节点路径是否为顶级函数，包括函数声明、defineSimpleWidget或markSimpleWidget调用、以及变量声明的函数
  * @param path - 函数路径
  */
-export function isRootFunction(
-  path: NodePath<FunctionNode>
-): boolean | 'simple' | 'defineAsyncWidget' {
-  if (path.type === 'FunctionDeclaration') {
-    return isRootDeclaration(path.parentPath)
-  }
-  if (path.parentPath.isCallExpression() && t.isIdentifier(path.parentPath.node.callee)) {
-    const callName = path.parentPath.node.callee
-    if (callName.name === 'defineAsyncWidget' || callName.name === 'simple') {
-      if (isImportedFromVitarx(path, callName.name)) {
-        return callName.name
+export function isRootFunction(path: NodePath<FunctionNode>): boolean | 'simple' {
+  // 如果是函数声明类型，则判断其父级路径是否为根声明
+  if (t.isFunctionDeclaration(path.node) && path.node.id) {
+    // 检查是否有变量引用了这个函数，并且该变量被markSimpleWidget调用
+    const functionName = path.node.id.name
+    if (functionName) {
+      // 查找是否有markSimpleWidget(functionName)的调用
+      const binding = path.scope.getBinding(functionName)
+      if (binding) {
+        // 获取所有可能的调用名称（包括别名）
+        const callNames = getImportedNames(path, ['defineSimpleWidget', 'markSimpleWidget'])
+
+        for (const referencePath of binding.referencePaths) {
+          // 检查是否作为 markSimpleWidget 或 defineSimpleWidget 的参数被调用
+          if (
+            referencePath.parentPath?.isCallExpression() &&
+            t.isIdentifier(referencePath.parentPath.node.callee)
+          ) {
+            const callName = referencePath.parentPath.node.callee.name
+            if (callNames.includes(callName)) return 'simple'
+          }
+        }
       }
     }
+    return isRootDeclaration(path.parentPath)
   }
+
+  // 如果父级路径是调用表达式，并且调用表达式的被调用者是一个标识符
+  if (path.parentPath.isCallExpression() && t.isIdentifier(path.parentPath.node.callee)) {
+    const callName = path.parentPath.node.callee.name
+    // 获取所有可能的调用名称（包括别名）
+    const callNames = getImportedNames(path, ['defineSimpleWidget', 'markSimpleWidget'])
+
+    // 如果调用名称是'defineSimpleWidget'或'markSimpleWidget'（包括别名），并且是从vitarx导入的
+    if (callNames.includes(callName)) return 'simple'
+  }
+
   // 匿名函数 或 箭头函数
   if (path.parentPath.type === 'VariableDeclarator' && path.parentPath.parentPath?.parentPath) {
-    return isRootDeclaration(path.parentPath.parentPath?.parentPath)
+    return isRootDeclaration(path.parentPath.parentPath.parentPath)
   }
+
   return false
 }
 
 /**
- * 检查函数是否从 vitarx 包中导入
+ * 获取从 vitarx 导入的函数的实际名称（包括别名）
  *
  * @param path - 函数路径
- * @param functionName - 函数名称
+ * @param functionNames - 原始函数名称列表
+ * @returns {string[]} 实际导入的名称列表（包括别名）
+ */
+function getImportedNames(path: NodePath<FunctionNode>, functionNames: string[]): string[] {
+  const importedNames: string[] = []
+
+  for (const functionName of functionNames) {
+    const binding = path.scope.getBinding(functionName)
+    if (binding && binding.path.parentPath?.isImportDeclaration()) {
+      const importDeclaration = binding.path.parentPath.node as t.ImportDeclaration
+      if (
+        importDeclaration.source.value === 'vitarx' ||
+        importDeclaration.source.value.startsWith('@vitarx')
+      ) {
+        // 棜查是否是默认导入或命名空间导入
+        if (binding.path.isImportDefaultSpecifier() || binding.path.isImportNamespaceSpecifier()) {
+          importedNames.push(functionName)
+        }
+        // 检查是否是命名导入
+        else if (binding.path.isImportSpecifier()) {
+          // 获取本地名称（可能是别名）
+          importedNames.push(binding.identifier.name)
+        }
+      }
+    }
+  }
+
+  return importedNames
+}
+
+/**
+ * 检查指定名称的函数是否从 vitarx 包中导入
+ *
+ * @param path - 函数路径
+ * @param localName - 本地名称（可能是别名）
  * @returns {boolean} - 是否从 vitarx 包中导入
  */
-function isImportedFromVitarx(path: NodePath<FunctionNode>, functionName: string): boolean {
-  const binding = path.scope.getBinding(functionName)
+function isImportedFromVitarxByName(path: NodePath<FunctionNode>, localName: string): boolean {
+  const binding = path.scope.getBinding(localName)
   if (binding && binding.path.parentPath?.isImportDeclaration()) {
     const importDeclaration = binding.path.parentPath.node as t.ImportDeclaration
-    return importDeclaration.source.value === 'vitarx'
+    return (
+      importDeclaration.source.value === 'vitarx' ||
+      importDeclaration.source.value.startsWith('@vitarx')
+    )
   }
   return false
 }
@@ -91,32 +152,6 @@ export function hasImport(ast: t.File, moduleName: string, importNames: string[]
   }
 
   return notImported
-}
-
-/**
- * 在最后一条import语句之后插入代码
- *
- * @param ast
- * @param injects
- */
-export function insertAfterLastImport(ast: ParseResult, injects: t.Statement[]): void {
-  let lastImportIndex = -1
-
-  // 找到最后一个 import 语句的位置
-  for (let i = 0; i < ast.program.body.length; i++) {
-    if (ast.program.body[i].type === 'ImportDeclaration') {
-      lastImportIndex = i
-    } else {
-      break
-    }
-  }
-  // 如果没有 import 语句，则直接插入到 body 的开头
-  if (lastImportIndex === -1) {
-    ast.program.body.unshift(...injects)
-  } else {
-    // 在最后一个 import 语句后面插入代码
-    ast.program.body.splice(lastImportIndex + 1, 0, ...injects)
-  }
 }
 
 /**
