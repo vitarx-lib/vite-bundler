@@ -1,6 +1,6 @@
 import { type ParseResult, parseSync, traverse, types as t } from '@babel/core'
 import { HmrId } from '../hmr-client/constant.js'
-import { hasImport, isRootFunction, type Option } from './common.js'
+import { getImportedNames, hasImport, isRootFunction, type Option } from './common.js'
 import type { NodePath } from '@babel/traverse'
 import crypto from 'crypto'
 // 函数节点
@@ -426,6 +426,42 @@ function handleClassExpression(path: NodePath<t.ClassExpression>): void {
 }
 
 /**
+ * 处理调用表达式的函数
+ *
+ * @param path - AST节点路径，表示一个调用表达式
+ */
+function handleCallExpression(path: NodePath<t.CallExpression>) {
+  // 获取调用表达式的被调用部分（函数名或属性访问）
+  const callee = path.node.callee
+
+  // 检查是否是标识符调用（即直接调用函数名）
+  if (t.isIdentifier(callee)) {
+    // 获取本地函数名称
+    const localFunctionName = callee.name
+
+    // 获取从 vitarx 导入的 exportWidget 和 build 的所有可能名称（包括别名）
+    const targetNames = getImportedNames(path, ['exportWidget', 'build'])
+
+    // 检查调用的函数是否是 exportWidget 或 build（包括别名）
+    if (targetNames.includes(localFunctionName)) {
+      // 获取调用参数列表
+      const args = path.node.arguments
+
+      // 如果有参数，则用第一个参数替换整个调用表达式
+      if (args.length > 0) {
+        // 获取第一个参数节点
+        const firstArg = args[0]
+        // 确保参数是表达式
+        if (t.isExpression(firstArg)) {
+          // 用第一个参数替换整个调用表达式
+          path.replaceWith(firstArg)
+        }
+      }
+    }
+  }
+}
+
+/**
  * hmr转换
  *
  * 注入热更新客户端依赖，并注入热更新处理程序
@@ -447,6 +483,8 @@ export default function hmrOrBuildTransform(ast: ParseResult, options: Option): 
     handler.ExportNamedDeclaration = handleExportNamedDeclaration.bind(options)
     handler.ExportDefaultDeclaration = handleExportDefaultDeclaration.bind(options)
     handler.ClassExpression = handleClassExpression
+  } else {
+    handler.CallExpression = handleCallExpression
   }
   // 遍历 AST 并处理
   traverse(ast, handler)
