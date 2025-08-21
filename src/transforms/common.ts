@@ -142,5 +142,5 @@ export function hasImport(ast: t.File, moduleName: string, importNames: string[]
  * @param options
  */
 export function babelGenerate(ast: t.Node, options?: GeneratorOptions): GeneratorResult {
-  return (generator as any).default(ast!, options)
+  return generator(ast!, options)
 }
