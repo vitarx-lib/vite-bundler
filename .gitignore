@@ -11,3 +11,4 @@ package-lock.json
 /tests
 /testDist
 __tests__/__snapshots__
+pnpm-lock.yaml
