@@ -10,3 +10,4 @@ package-lock.json
 /dist
 /tests
 /testDist
+__tests__/__snapshots__
