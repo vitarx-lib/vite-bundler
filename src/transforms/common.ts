@@ -75,7 +75,7 @@ export function isRootFunction(path: NodePath<FunctionNode>): boolean | 'simple'
  * @param functionNames - 原始函数名称列表
  * @returns {string[]} 实际导入的名称列表（包括别名）
  */
-function getImportedNames(path: NodePath<FunctionNode>, functionNames: string[]): string[] {
+export function getImportedNames(path: NodePath, functionNames: string[]): string[] {
   const importedNames: string[] = []
 
   for (const functionName of functionNames) {
