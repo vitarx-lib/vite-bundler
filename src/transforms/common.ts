@@ -34,7 +34,6 @@ export function isRootFunction(path: NodePath<FunctionNode>): boolean | 'simple'
       if (binding) {
         // 获取所有可能的调用名称（包括别名）
         const callNames = getImportedNames(path, ['defineSimpleWidget', 'markSimpleWidget'])
-
         for (const referencePath of binding.referencePaths) {
           // 检查是否作为 markSimpleWidget 或 defineSimpleWidget 的参数被调用
           if (
@@ -62,9 +61,38 @@ export function isRootFunction(path: NodePath<FunctionNode>): boolean | 'simple'
 
   // 匿名函数 或 箭头函数
   if (path.parentPath.type === 'VariableDeclarator' && path.parentPath.parentPath?.parentPath) {
+    if (t.isVariableDeclaration(path.parentPath.parentPath.node)) {
+      // 如果变量名被 callNames中的函数调用，则返回`simple`
+      // 获取变量名
+      const variableDeclaration = path.parentPath.parentPath.node
+      // 获取所有可能的调用名称（包括别名）
+      const callNames = getImportedNames(path.parentPath.parentPath.parentPath, [
+        'defineSimpleWidget',
+        'markSimpleWidget'
+      ])
+      // 遍历变量声明中的所有 declarators
+      for (const declarator of variableDeclaration.declarations) {
+        if (t.isIdentifier(declarator.id)) {
+          const variableName = declarator.id.name
+          // 查找该变量的绑定
+          const binding = path.parentPath.scope.getBinding(variableName)
+          if (binding) {
+            // 检查该变量是否被 callNames 中的函数调用
+            for (const referencePath of binding.referencePaths) {
+              if (
+                referencePath.parentPath?.isCallExpression() &&
+                t.isIdentifier(referencePath.parentPath.node.callee)
+              ) {
+                const callName = referencePath.parentPath.node.callee.name
+                if (callNames.includes(callName)) return 'simple'
+              }
+            }
+          }
+        }
+      }
+    }
     return isRootDeclaration(path.parentPath.parentPath.parentPath)
   }
-
   return false
 }
 
