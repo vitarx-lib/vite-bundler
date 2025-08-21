@@ -103,25 +103,6 @@ function getImportedNames(path: NodePath<FunctionNode>, functionNames: string[])
 }
 
 /**
- * 检查指定名称的函数是否从 vitarx 包中导入
- *
- * @param path - 函数路径
- * @param localName - 本地名称（可能是别名）
- * @returns {boolean} - 是否从 vitarx 包中导入
- */
-function isImportedFromVitarxByName(path: NodePath<FunctionNode>, localName: string): boolean {
-  const binding = path.scope.getBinding(localName)
-  if (binding && binding.path.parentPath?.isImportDeclaration()) {
-    const importDeclaration = binding.path.parentPath.node as t.ImportDeclaration
-    return (
-      importDeclaration.source.value === 'vitarx' ||
-      importDeclaration.source.value.startsWith('@vitarx')
-    )
-  }
-  return false
-}
-
-/**
  * 检查是否已经存在指定的 import 语句
  *
  * @param ast - AST 树
