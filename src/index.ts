@@ -9,7 +9,7 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname)
  *
  * 此插件主要用于转换函数式组件中的视图代码，以及处理 HMR 热更新逻辑。
  *
- * @param _options - 暂无可选配置，未来版本可能会添加一些配置。
+ * @param _options - 暂无可选配置。
  * @returns - 返回一个 Vite 插件对象。
  */
 export default function vitarxBundler(_options?: {}): Plugin {
