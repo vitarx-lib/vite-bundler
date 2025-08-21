@@ -366,44 +366,43 @@ function handleJsxReturn(returnNode: t.ReturnStatement): t.ReturnStatement {
  */
 function handleFunctionDeclaration(path: NodePath<FunctionNode>) {
   const isRoot = isRootFunction(path)
+  if (!isRoot) return
   // 1. 确保函数是根节点
-  if (isRoot) {
-    const isDev = process.env.NODE_ENV === 'development'
+  const isDev = process.env.NODE_ENV === 'development'
 
-    // 2. 确保 函数体是块级语句
-    if (!t.isBlockStatement(path.node.body)) {
-      path.node.body = t.blockStatement([t.returnStatement(path.node.body)])
-    }
-    const block = path.node.body
-    const states: Set<string> = new Set()
-    if (isRoot !== 'simple') {
-      // 3. 遍历 body 处理语句
-      for (let i = 0; i < block.body.length; i++) {
-        const statement = block.body[i]
-        if (t.isReturnStatement(statement)) {
-          // 4. 处理返回值（可以是 JSX 或其他）
-          const newStatement = handleJsxReturn(statement)
-          // 判断是否需要替换
-          if (newStatement !== statement) {
-            // 替换语句，直接修改 body 数组中的元素
-            block.body[i] = newStatement
-          }
-        } else if (t.isVariableDeclaration(statement) && isDev) {
-          // 5. 开发模式，处理变量声明，挂载状态
-          handleFnVariableDeclaration(statement, states)
+  // 2. 确保 函数体是块级语句
+  if (!t.isBlockStatement(path.node.body)) {
+    path.node.body = t.blockStatement([t.returnStatement(path.node.body)])
+  }
+  const block = path.node.body
+  const states: Set<string> = new Set()
+  if (isRoot !== 'simple') {
+    // 3. 遍历 body 处理语句
+    for (let i = 0; i < block.body.length; i++) {
+      const statement = block.body[i]
+      if (t.isReturnStatement(statement)) {
+        // 4. 处理返回值（可以是 JSX 或其他）
+        const newStatement = handleJsxReturn(statement)
+        // 判断是否需要替换
+        if (newStatement !== statement) {
+          // 替换语句，直接修改 body 数组中的元素
+          block.body[i] = newStatement
         }
+      } else if (t.isVariableDeclaration(statement) && isDev) {
+        // 5. 开发模式，处理变量声明，挂载状态
+        handleFnVariableDeclaration(statement, states)
       }
     }
-    if (isDev) {
-      if (isRoot === 'simple') {
-        // 此时的函数声明应该是 const xxx = simple(() => {})
-        // @ts-ignore
-        const moduleName = path.parentPath?.parentPath?.node?.id?.name
-        const hmrRegister = StaticUtils.createSimpleHmrRegisterExpr(moduleName)
-        block.body.unshift(StaticUtils.VNodeDeclaration, hmrRegister)
-      } else {
-        StaticUtils.injectFnWidgetHmrState(block, states)
-      }
+  }
+  if (isDev) {
+    if (isRoot === 'simple') {
+      // 此时的函数声明应该是 const xxx = simple(() => {})
+      // @ts-ignore
+      const moduleName = path.parentPath?.parentPath?.node?.id?.name
+      const hmrRegister = StaticUtils.createSimpleHmrRegisterExpr(moduleName)
+      block.body.unshift(StaticUtils.VNodeDeclaration, hmrRegister)
+    } else {
+      StaticUtils.injectFnWidgetHmrState(block, states)
     }
   }
 }
