@@ -10,29 +10,35 @@ import {
 import { HmrId } from './constant.js'
 
 /**
- * 更新小部件实例
- *
- * @param newInstance
- * @param oldInstance
- * @param change
- * @param isClass
+ * 更新组件实例的函数
+ * @param newInstance 新的组件实例
+ * @param oldInstance 旧的组件实例
+ * @param change 变更代码对象，包含build和其他属性
+ * @param isClass 是否为类组件的标志
  */
 function updateWidget(
-  newInstance: Widget,
-  oldInstance: Widget,
-  change: ChangeCode,
-  isClass: boolean
+  newInstance: Widget, // 新的组件实例
+  oldInstance: Widget, // 旧的组件实例
+  change: ChangeCode, // 变更代码对象，包含build和其他属性
+  isClass: boolean // 是否为类组件的标志
 ): void {
+  // 如果change对象有build属性且没有other属性，则调用增量更新函数
   if (change.build && !change.other) {
     updateWidgetBuild(newInstance, oldInstance, isClass)
   } else {
+    // 否则调用全量更新函数
     updateWidgetFull(newInstance, oldInstance)
   }
 }
 
-// 更新build部分
+/**
+ * 更新组件构建的函数
+ * @param newInstance 新组件实例
+ * @param oldInstance 旧组件实例
+ * @param isClass 是否为类组件
+ */
 function updateWidgetBuild(newInstance: Widget, oldInstance: Widget, isClass: boolean): void {
-  // 销毁旧作用域
+  // 销毁旧作用域，释放相关资源
   oldInstance.$scope.dispose()
   // 类组件恢复属性
   if (isClass) {
@@ -51,15 +57,19 @@ function updateWidgetBuild(newInstance: Widget, oldInstance: Widget, isClass: bo
   if (newInstance.$vnode.state === 'activated') newInstance.$vnode.updateChild(newChild)
 }
 
-// 全量更新
+/**
+ * 更新组件实例的完整方法
+ * @param newInstance 新的组件实例
+ * @param oldInstance 旧的组件实例
+ */
 function updateWidgetFull(newInstance: Widget, oldInstance: Widget): void {
   // 如果是非活跃状态则不更新js逻辑层与数据层的变化
   if (oldInstance.$vnode.state !== 'activated') return
-  // 创建占位元素
+  // 创建占位元素，用于在更新过程中保持DOM结构稳定
   const placeholderEl: Text = document.createTextNode('')
-  // 父元素
+  // 父元素变量，用于后续DOM操作
   let parentEl: ParentNode
-  // 如果旧实例使用了传送功能
+  // 如果旧实例使用了传送功能（teleport）
   if (oldInstance.$vnode.teleport) {
     // 占位节点插入到影子元素之前
     parentEl = DomHelper.insertBefore(placeholderEl, oldInstance.$vnode.shadowElement)
@@ -67,7 +77,7 @@ function updateWidgetFull(newInstance: Widget, oldInstance: Widget): void {
     // 占位节点插入到旧元素之前
     parentEl = DomHelper.insertBefore(placeholderEl, oldInstance.$el)
   }
-  // 卸载旧的组件实例
+  // 卸载旧的组件实例，释放资源
   oldInstance.$vnode.unmount()
   // 渲染新元素
   const el = newInstance.$vnode.render()
@@ -79,7 +89,7 @@ function updateWidgetFull(newInstance: Widget, oldInstance: Widget): void {
     // 非占位节点用新元素替换占位元素
     parentEl.replaceChild(el, placeholderEl)
   }
-  // 挂载完成
+  // 挂载完成，新实例正式接管DOM
   newInstance.$vnode.mount()
 }
 
