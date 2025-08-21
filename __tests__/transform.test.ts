@@ -154,4 +154,23 @@ describe('transforms/index.ts', () => {
     expect(result3).toBeDefined()
     expect(result3!.code).not.toContain("() => (jsx('div'))")
   })
+
+  it('生产环境应该去除build和exportWidget', () => {
+    process.env.NODE_ENV = 'production'
+    const result = transform(
+      `
+      import { build,jsx,exportWidget } from 'vitarx'
+      
+      const MyWidget = () => {
+        return build(()=>jsx('div'))
+      }
+      export default exportWidget(MyWidget)
+    `,
+      '/path/to/file.jsx',
+      mockViteConfig
+    )
+    expect(result).toBeDefined()
+    expect(result!.code).not.toContain('build(')
+    expect(result!.code).not.toContain('exportWidget(')
+  })
 })
