@@ -1,6 +1,7 @@
 import { type ChangeCode, differenceClassWidgetChange, differenceFnWidgetChange } from './utils.js'
 import {
   __WIDGET_INTRINSIC_KEYWORDS__,
+  createElement,
   DomHelper,
   isEffect,
   Widget,
@@ -127,7 +128,8 @@ export default function handleHmrUpdate(vnode: WidgetVNode, newModule: WidgetTyp
       change = differenceFnWidgetChange(newModule.toString(), oldModule.toString())
     }
     if (change.other) delete vnode[HmrId.state]
-    updateWidget(vnode.instance, oldInstance, change, isClass)
+    const newInstance = (createElement(newModule) as WidgetVNode).instance
+    updateWidget(newInstance, oldInstance, change, isClass)
   } catch (e) {
     console.error('[VitarxViteBundler]：热更新模块时捕获到异常', e)
   }
