@@ -76,7 +76,8 @@ export default class ModuleManager {
         // 更新模块
         this.updateModule(newModule)
         // 更新节点视图
-        handleHmrUpdate(node, newModule)
+        const updateResult = handleHmrUpdate(node, newModule)
+        if (!updateResult) return '节点状态处于非活跃状态，无法完成热更新'
       }
     }
   }
