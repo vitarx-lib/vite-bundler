@@ -87,8 +87,6 @@ function updateWidgetFull(node: WidgetVNode, module: WidgetType): boolean {
   node.triggerLifecycleHook(LifecycleHooks.beforeUnmount)
   // 递归卸载子节点
   node.child.unmount()
-  // 卸载元素
-  DomHelper.remove(node.element)
   // 触发销毁钩子
   node.triggerLifecycleHook(LifecycleHooks.unmounted)
   // 更新模块
