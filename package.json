@@ -1,6 +1,6 @@
 {
   "name": "@vitarx/vite-bundler",
-  "version": "3.0.0-alpha.3",
+  "version": "3.0.0-alpha.4",
   "description": "vite-bundler 是一个 Vite 插件，用于构建 Vitarx 应用。",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@babel/core": "^7.28.3",
-    "vitarx": "3.0.0-alpha.12",
+    "vitarx": "3.0.0-alpha.13",
     "acorn": "^8.15.0"
   },
   "devDependencies": {
