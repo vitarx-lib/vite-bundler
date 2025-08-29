@@ -55,7 +55,7 @@ function updateWidgetBuild(node: WidgetVNode, module: WidgetType, isClass: boole
     }
   }
   // 更新视图，仅在组件是活跃状态下更新！！！
-  if (newInstance.$vnode.state === 'activated') newInstance.update()
+  if (node.state === 'activated') newInstance.update()
 }
 
 /**
