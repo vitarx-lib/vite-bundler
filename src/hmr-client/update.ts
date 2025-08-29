@@ -43,8 +43,6 @@ function updateWidgetBuild(node: WidgetVNode, module: WidgetType, isClass: boole
   const oldInstance = node.instance
   // 更新组件实例
   node['updateModule'](module)
-  // 销毁旧作用域，释放相关资源
-  oldInstance.$scope.dispose()
   const newInstance = node.instance
   // 类组件恢复属性
   if (isClass) {
@@ -53,7 +51,7 @@ function updateWidgetBuild(node: WidgetVNode, module: WidgetType, isClass: boole
       if (__WIDGET_INTRINSIC_KEYWORDS__.includes(key as any)) continue
       const oldValue = (oldInstance as any)[key]
       // 仅恢复非副作用属性
-      if (!isEffect(oldValue)) (node.instance as any)[key] = oldValue
+      if (!isEffect(oldValue)) (newInstance as any)[key] = oldValue
     }
   }
   // 更新视图，仅在组件是活跃状态下更新！！！
