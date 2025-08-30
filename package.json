@@ -1,9 +1,9 @@
 {
   "name": "@vitarx/vite-bundler",
-  "version": "3.0.0-alpha.5",
+  "version": "3.0.0-beta.1",
   "description": "vite-bundler 是一个 Vite 插件，用于构建 Vitarx 应用。",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "type": "module",
   "license": "MIT",
   "keywords": [
@@ -12,7 +12,10 @@
     "vite-plugin-vitarx"
   ],
   "exports": {
-    ".": "./dist/index.js",
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
     "./client": "./dist/hmr-client/index.js"
   },
   "author": "ZhuChongLin <8210856@qq.com>",
@@ -24,12 +27,12 @@
     "push": "pnpm publish --access=public"
   },
   "peerDependencies": {
-    "@babel/generator": "^7.28.3",
     "vite": "^6.0.0"
   },
   "dependencies": {
     "@babel/core": "^7.28.3",
-    "vitarx": "3.0.0-alpha.14",
+    "@babel/generator": "^7.28.3",
+    "vitarx": "3.0.0-beta.1",
     "acorn": "^8.15.0"
   },
   "devDependencies": {
