@@ -79,8 +79,6 @@ function updateWidgetFull(node: WidgetVNode, module: WidgetType): boolean {
     // 占位节点插入到旧元素之前
     parentEl = DomHelper.insertBefore(placeholderEl, oldInstance.$el)
   }
-  // 卸载旧的组件实例，释放资源
-  node.unmount()
   // 执行卸载前钩子
   node.triggerLifecycleHook(LifecycleHooks.beforeUnmount)
   // 递归卸载子节点
