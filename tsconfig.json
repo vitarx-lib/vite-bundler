@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ES2020",
+    "module": "ESNext",
     // 开启类型声明文件的生成
-    "declaration": true,
+    "declaration": false,
     // JavaScript 文件输出目录
     "outDir": "dist",
     // 开启严格模式（可选）
@@ -14,7 +14,8 @@
     "esModuleInterop": true,
     // 跳过库文件检查（可选）
     "skipLibCheck": true,
-    "noEmit": false,
+    // 禁止生成 .js 文件
+    "noEmit": true,
     // 删除注释
     "removeComments": false,
     // 允许 import json
@@ -24,19 +25,22 @@
     // 确保覆盖重写
     "noImplicitOverride": true,
     // 不允许未使用的变量
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     // 不允许使用js文件
     "allowJs": false,
-    // 根目录
-    "baseUrl": "./",
     // 确保文件名大小写一致
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
     "jsxImportSource": "vitarx",
     "types": [
-      "vite/client"
+      "vite/client",
+      "vitarx"
     ]
   },
-  "include": ["src"],
+  "include": [
+    "src",
+    "*.tsx",
+    "*.ts"
+  ],
   "exclude": ["node_modules"]
 }
