@@ -1,5 +1,4 @@
-import { App as AppRenderer, createApp } from 'vitarx'
-import App from './__TEST__/app.js'
+import { createApp } from 'vitarx'
+import TestApp from './TestApp.js'
 
-createApp('#root').render(App)
-console.log(AppRenderer.version)
+createApp(TestApp).mount('#root')
