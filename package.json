@@ -13,8 +13,8 @@
   ],
   "exports": {
     ".": {
-      "default": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./client": "./dist/hmr-client/index.js"
   },
@@ -22,17 +22,17 @@
   "scripts": {
     "vite:build": "vite build",
     "vite:dev": "vite dev --force",
-    "build": "rimraf dist && tsc",
+    "build": "rimraf dist && tsc -p tsconfig.build.json",
     "prepublishOnly": "pnpm run build",
     "push": "pnpm publish --access=public"
   },
   "peerDependencies": {
-    "vite": "^6.0.0"
+    "vite": "^7.1.4"
   },
   "dependencies": {
     "@babel/core": "^7.28.3",
     "@babel/generator": "^7.28.3",
-    "vitarx": "3.0.0-beta.1",
+    "vitarx": "^3.0.0",
     "acorn": "^8.15.0"
   },
   "devDependencies": {
