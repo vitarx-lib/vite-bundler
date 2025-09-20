@@ -462,6 +462,37 @@ function handleCallExpression(path: NodePath<t.CallExpression>) {
 }
 
 /**
+ * 删除
+ *
+ * @param ast
+ */
+function removeVitarxImports(ast: ParseResult) {
+  traverse(ast, {
+    ImportDeclaration(path: NodePath<t.ImportDeclaration>) {
+      const node = path.node
+      if (!(node.source.value.startsWith('vitarx') || node.source.value.startsWith('@vitarx')))
+        return
+
+      const remaining = node.specifiers.filter(spec => {
+        // 只删除命名导入中被标记的导入（保留其他导入、namespace/default）
+        if (t.isImportSpecifier(spec)) {
+          const importedName = (spec.imported as t.Identifier).name
+          if (importedName === 'exportWidget' || importedName === 'build') {
+            return false // remove this specifier
+          }
+        }
+        return true // keep
+      })
+
+      if (remaining.length === 0) {
+        path.remove() // 整个 import 没剩下了，删除整行
+      } else {
+        path.node.specifiers = remaining
+      }
+    }
+  })
+}
+/**
  * hmr转换
  *
  * 注入热更新客户端依赖，并注入热更新处理程序
@@ -483,11 +514,15 @@ export default function hmrOrBuildTransform(ast: ParseResult, options: Option): 
     handler.ExportNamedDeclaration = handleExportNamedDeclaration.bind(options)
     handler.ExportDefaultDeclaration = handleExportDefaultDeclaration.bind(options)
     handler.ClassExpression = handleClassExpression
+    // 遍历 AST 并处理
+    traverse(ast, handler)
   } else {
     handler.CallExpression = handleCallExpression
+    // 遍历 AST 并处理
+    traverse(ast, handler)
+    // 第二遍：删除 import specifier
+    removeVitarxImports(ast)
   }
-  // 遍历 AST 并处理
-  traverse(ast, handler)
   if (process.env.NODE_ENV === 'development') {
     // 注入 HMR 依赖
     StaticUtils.injectHmrClientDeps(ast)
