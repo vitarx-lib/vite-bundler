@@ -23,8 +23,7 @@
     "vite:build": "vite build",
     "vite:dev": "vite dev --force",
     "build": "rimraf dist && tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build",
-    "push": "pnpm publish --access=public --registry https://registry.npmjs.org/"
+    "push": "release-cli"
   },
   "peerDependencies": {
     "vite": "^7.1.4"
