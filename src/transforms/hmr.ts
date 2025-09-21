@@ -412,7 +412,7 @@ function handleFunctionDeclaration(path: NodePath<FunctionNode>) {
  *
  * @param path
  */
-function handleClassExpression(path: NodePath<t.ClassExpression>): void {
+function handleClassExpression(path: NodePath<t.ClassExpression | t.ClassDeclaration>): void {
   // 检查类中是否定义了 build 方法
   const hasBuildMethod = path.node.body.body.some(method => {
     return (
@@ -514,6 +514,7 @@ export default function hmrOrBuildTransform(ast: ParseResult, options: Option): 
     handler.ExportNamedDeclaration = handleExportNamedDeclaration.bind(options)
     handler.ExportDefaultDeclaration = handleExportDefaultDeclaration.bind(options)
     handler.ClassExpression = handleClassExpression
+    handler.ClassDeclaration = handleClassExpression
     // 遍历 AST 并处理
     traverse(ast, handler)
   } else {
