@@ -2,8 +2,11 @@ import { type ChangeCode, differenceClassWidgetChange, differenceFnWidgetChange 
 import {
   __WIDGET_INTRINSIC_KEYWORDS__,
   DomHelper,
+  isContainerVNode,
   isEffect,
+  isWidgetVNode,
   LifecycleHooks,
+  type VNode,
   Widget,
   type WidgetType,
   type WidgetVNode
@@ -85,6 +88,8 @@ function updateWidgetFull(node: WidgetVNode, module: WidgetType): boolean {
   node.child.unmount()
   // 触发销毁钩子
   node.triggerLifecycleHook(LifecycleHooks.unmounted)
+  // 递归重置子模块
+  updateNodeModules(node.child)
   // 更新模块
   node['updateModule'](module, true)
   // 创建新实例
@@ -104,6 +109,22 @@ function updateWidgetFull(node: WidgetVNode, module: WidgetType): boolean {
   return true
 }
 
+/**
+ * 更新节点的模块
+ * @param child - 虚拟节点对象，需要被更新模块的节点
+ */
+function updateNodeModules(child: VNode) {
+  // 判断是否是组件类型的虚拟节点
+  if (isWidgetVNode(child)) {
+    // 如果是组件节点，则更新其模块
+    // 第一个参数是节点类型，第二个参数表示是否强制更新
+    child['updateModule'](child.type, true)
+  } else if (isContainerVNode(child)) {
+    // 如果是容器类型的虚拟节点，则递归处理其子节点
+    // 遍历所有子节点并调用 updateNodeModules 函数
+    child.children.forEach(childNode => updateNodeModules(childNode))
+  }
+}
 /**
  * 处理热更新
  *
