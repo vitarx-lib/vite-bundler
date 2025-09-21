@@ -1,4 +1,18 @@
-# [3.1.0](https://gitee.com/vitarx/vite-bundler/compare/v3.0.0...v3.1.0) (2025-09-20)
+## [3.1.1](https://gitee.com/vitarx/vite-bundler/compare/v3.1.0...v3.1.1) (2025-09-21)
+
+
+### Bug Fixes
+
+* **hmr-client:** 修复更新js逻辑层时提示子节点已经挂载无法重新挂载问题 ([7aa1075](https://gitee.com/vitarx/vite-bundler/commits/7aa107538a54f9da909d26eae3a6115e97e5e193))
+
+
+### Features
+
+* **hmr:** 添加移除特定导入的逻辑 ([fed26ea](https://gitee.com/vitarx/vite-bundler/commits/fed26eadb4c8e41acbe61fe58e50091b53a8736d))
+
+
+
+# [3.0.0](https://gitee.com/vitarx/vite-bundler/compare/v1.0.3...v3.0.0) (2025-09-06)
 
 
 ### Bug Fixes
@@ -10,7 +24,6 @@
 
 ### Features
 
-* **hmr:** 添加移除特定导入的逻辑 ([fed26ea](https://gitee.com/vitarx/vite-bundler/commits/fed26eadb4c8e41acbe61fe58e50091b53a8736d))
 * 添加 TestApp 组件 ([63fe82e](https://gitee.com/vitarx/vite-bundler/commits/63fe82e765489f60f3b654a61de8125a1cc75614))
 
 
