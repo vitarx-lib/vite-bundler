@@ -45,7 +45,7 @@ class StaticUtils {
             t.memberExpression(t.identifier(HmrId.hmr), t.identifier('instance')),
             t.identifier('register')
           ),
-          [t.memberExpression(t.thisExpression(), t.identifier('vnode'))]
+          [t.memberExpression(t.thisExpression(), t.identifier('$vnode'))]
         )
       )
       this.cache.set('classWidgetHmrRegister', register)
