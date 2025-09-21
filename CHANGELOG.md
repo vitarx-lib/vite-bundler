@@ -1,10 +1,20 @@
-## [3.1.2](https://gitee.com/vitarx/vite-bundler/compare/v3.1.1...v3.1.2) (2025-09-21)
+## [3.1.3](https://gitee.com/vitarx/vite-bundler/compare/v3.1.2...v3.1.3) (2025-09-21)
+
+### Bug Fixes
+
+* **transforms:** 处理命名导出声明的HMR
+  ID注入 ([7f1885a](https://gitee.com/vitarx/vite-bundler/commits/7f1885a4d7f7e192d5cbd677182a11be158b2d02))
+* **transforms:**
+  扩展handleClassExpression函数参数类型支持ClassDeclaration ([299afef](https://gitee.com/vitarx/vite-bundler/commits/299afef9efa40de176d9811b2cd88ce3ba781c6b))
+* **transforms:** 更新hmr.ts中vnode标识符为$
+  vnode ([216eb4a](https://gitee.com/vitarx/vite-bundler/commits/216eb4a3344a2aceb5982c2237fcff4e6c6bc43b))
+
+## [3.1.1](https://gitee.com/vitarx/vite-bundler/compare/v3.1.0...v3.1.1) (2025-09-21)
 
 
 ### Bug Fixes
 
 * **hmr-client:** 修复更新js逻辑层时提示子节点已经挂载无法重新挂载问题 ([7aa1075](https://gitee.com/vitarx/vite-bundler/commits/7aa107538a54f9da909d26eae3a6115e97e5e193))
-* **transforms:** 更新hmr.ts中vnode标识符为$vnode ([216eb4a](https://gitee.com/vitarx/vite-bundler/commits/216eb4a3344a2aceb5982c2237fcff4e6c6bc43b))
 
 
 
