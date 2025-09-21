@@ -1,7 +1,7 @@
 import { type Element, Widget } from 'vitarx'
 
-export default class TestClassApp extends Widget {
+export class ExportClassWidget extends Widget {
   override build(): Element | null {
-    return <span>TestApp+++</span>
+    return <span>ExportClassWidget</span>
   }
 }
