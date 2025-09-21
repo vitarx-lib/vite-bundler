@@ -249,6 +249,14 @@ function handleExportNamedDeclaration(this: Option, path: NodePath<t.ExportNamed
     if (declaration.id) {
       StaticUtils.injectHmrIdDefine(path, declaration.id.name, this.filename)
     }
+  } else if (t.isExportNamedDeclaration(path.node)) {
+    path.node.specifiers.forEach(specifier => {
+      if (t.isExportSpecifier(specifier)) {
+        StaticUtils.injectHmrIdDefine(path, specifier.local.name, this.filename)
+      } else if (specifier.exported.type === 'Identifier') {
+        StaticUtils.injectHmrIdDefine(path, specifier.exported.name, this.filename)
+      }
+    })
   }
 }
 
