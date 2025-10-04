@@ -1,13 +1,31 @@
-## [3.1.3](https://gitee.com/vitarx/vite-bundler/compare/v3.1.2...v3.1.3) (2025-09-21)
+## [3.1.4](https://gitee.com/vitarx/vite-bundler/compare/v3.1.3...v3.1.4) (2025-10-04)
+
 
 ### Bug Fixes
 
-* **transforms:** 处理命名导出声明的HMR
-  ID注入 ([7f1885a](https://gitee.com/vitarx/vite-bundler/commits/7f1885a4d7f7e192d5cbd677182a11be158b2d02))
-* **transforms:**
-  扩展handleClassExpression函数参数类型支持ClassDeclaration ([299afef](https://gitee.com/vitarx/vite-bundler/commits/299afef9efa40de176d9811b2cd88ce3ba781c6b))
-* **transforms:** 更新hmr.ts中vnode标识符为$
-  vnode ([216eb4a](https://gitee.com/vitarx/vite-bundler/commits/216eb4a3344a2aceb5982c2237fcff4e6c6bc43b))
+* **hmr:** 修复热更新时子节点模块未更新的问题 ([51c145a](https://gitee.com/vitarx/vite-bundler/commits/51c145abb158808815d2e52d8ee39aec296667c6))
+* **hmr:** 修复热更新时组件模块未正确替换的问题 ([86c1f06](https://gitee.com/vitarx/vite-bundler/commits/86c1f06b4fbcf8d4000a9f97a900c3f7e351c7af))
+
+
+
+## [3.1.3](https://gitee.com/vitarx/vite-bundler/compare/v3.1.2...v3.1.3) (2025-09-21)
+
+
+### Bug Fixes
+
+* **transforms:** 处理命名导出声明的HMR ID注入 ([7f1885a](https://gitee.com/vitarx/vite-bundler/commits/7f1885a4d7f7e192d5cbd677182a11be158b2d02))
+* **transforms:** 扩展handleClassExpression函数参数类型支持ClassDeclaration ([299afef](https://gitee.com/vitarx/vite-bundler/commits/299afef9efa40de176d9811b2cd88ce3ba781c6b))
+
+
+
+## [3.1.2](https://gitee.com/vitarx/vite-bundler/compare/v3.1.1...v3.1.2) (2025-09-21)
+
+
+### Bug Fixes
+
+* **transforms:** 更新hmr.ts中vnode标识符为$vnode ([216eb4a](https://gitee.com/vitarx/vite-bundler/commits/216eb4a3344a2aceb5982c2237fcff4e6c6bc43b))
+
+
 
 ## [3.1.1](https://gitee.com/vitarx/vite-bundler/compare/v3.1.0...v3.1.1) (2025-09-21)
 
