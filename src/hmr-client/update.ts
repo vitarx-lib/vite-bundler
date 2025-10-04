@@ -119,6 +119,7 @@ function updateNodeModules(child: VNode) {
     // 如果是组件节点，则更新其模块
     // 第一个参数是节点类型，第二个参数表示是否强制更新
     child['updateModule'](child.type, true)
+    updateNodeModules(child.child)
   } else if (isContainerVNode(child)) {
     // 如果是容器类型的虚拟节点，则递归处理其子节点
     // 遍历所有子节点并调用 updateNodeModules 函数
