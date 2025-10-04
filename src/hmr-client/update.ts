@@ -116,9 +116,11 @@ function updateWidgetFull(node: WidgetVNode, module: WidgetType): boolean {
 function updateNodeModules(child: VNode) {
   // 判断是否是组件类型的虚拟节点
   if (isWidgetVNode(child)) {
+    // 获取新的模块
+    const newModule = (window as any)[HmrId.hmr]?.replaceNewModule(child.type) || child.type
     // 如果是组件节点，则更新其模块
-    // 第一个参数是节点类型，第二个参数表示是否强制更新
-    child['updateModule'](child.type, true)
+    child['updateModule'](newModule, true)
+    // 递归处理子节点
     updateNodeModules(child.child)
   } else if (isContainerVNode(child)) {
     // 如果是容器类型的虚拟节点，则递归处理其子节点
@@ -126,6 +128,7 @@ function updateNodeModules(child: VNode) {
     child.children.forEach(childNode => updateNodeModules(childNode))
   }
 }
+
 /**
  * 处理热更新
  *
