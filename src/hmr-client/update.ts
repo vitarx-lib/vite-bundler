@@ -5,7 +5,6 @@ import {
   isContainerVNode,
   isEffect,
   isWidgetVNode,
-  LifecycleHooks,
   type VNode,
   Widget,
   type WidgetType,
@@ -62,7 +61,8 @@ function updateWidgetBuild(node: WidgetVNode, module: WidgetType, isClass: boole
 }
 
 /**
- * 更新组件实例的完整方法
+ * 更新组件实例
+ *
  * @param node
  * @param module
  */
@@ -72,40 +72,22 @@ function updateWidgetFull(node: WidgetVNode, module: WidgetType): boolean {
   if (node.state !== 'activated') return false
   // 创建占位元素，用于在更新过程中保持DOM结构稳定
   const placeholderEl: Text = document.createTextNode('')
-  // 父元素变量，用于后续DOM操作
-  let parentEl: ParentNode
   // 如果旧实例使用了传送功能（teleport）
   if (oldInstance.$vnode.teleport) {
     // 占位节点插入到影子元素之前
-    parentEl = DomHelper.insertBefore(placeholderEl, oldInstance.$vnode.shadowElement)
+    DomHelper.insertBefore(placeholderEl, oldInstance.$vnode.shadowElement)
   } else {
     // 占位节点插入到旧元素之前
-    parentEl = DomHelper.insertBefore(placeholderEl, oldInstance.$el)
+    DomHelper.insertBefore(placeholderEl, oldInstance.$el)
   }
-  // 执行卸载前钩子
-  node.triggerLifecycleHook(LifecycleHooks.beforeUnmount)
   // 递归卸载子节点
-  node.child.unmount()
-  // 触发销毁钩子
-  node.triggerLifecycleHook(LifecycleHooks.unmounted)
+  node.unmount()
   // 递归重置子模块
   updateNodeModules(node.child)
   // 更新模块
   node['updateModule'](module, true)
-  // 创建新实例
-  const newInstance = node.instance
-  // 渲染新元素
-  const el = node.render()
-  // 如果是传送节点
-  if (node.teleport) {
-    // 用影子元素替换掉占位元素，新组件实例挂载时自动将真实的元素挂载到传送节点中！
-    parentEl.replaceChild(newInstance.$vnode.shadowElement, placeholderEl)
-  } else {
-    // 非占位节点用新元素替换占位元素
-    parentEl.replaceChild(el, placeholderEl)
-  }
   // 重新挂载节点，新实例正式接管DOM
-  node.mount()
+  node.mount(placeholderEl, 'replace')
   return true
 }
 
