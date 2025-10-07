@@ -1,6 +1,6 @@
 {
   "name": "@vitarx/vite-bundler",
-  "version": "3.1.4",
+  "version": "4.0.0",
   "description": "vite-bundler 是一个 Vite 插件，用于构建 Vitarx 应用。",
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
