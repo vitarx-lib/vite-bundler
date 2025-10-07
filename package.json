@@ -32,7 +32,7 @@
     "@babel/core": "^7.28.3",
     "@babel/generator": "^7.28.3",
     "acorn": "^8.15.0",
-    "vitarx": "^3.0.1"
+    "vitarx": "^3.3.0"
   },
   "devDependencies": {
     "@babel/traverse": "^7.28.3",
