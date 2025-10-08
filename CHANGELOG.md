@@ -1,4 +1,8 @@
-# [4.0.0](https://gitee.com/vitarx/vite-bundler/compare/v3.1.4...v4.0.0) (2025-10-07)
+## [4.0.1](https://gitee.com/vitarx/vite-bundler/compare/v4.0.0...v4.0.1) (2025-10-08)
+
+
+
+## [3.1.4](https://gitee.com/vitarx/vite-bundler/compare/v3.1.3...v3.1.4) (2025-10-04)
 
 
 ### Bug Fixes
