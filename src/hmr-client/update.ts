@@ -1,9 +1,7 @@
-import { type ChangeCode, differenceClassWidgetChange, differenceFnWidgetChange } from './utils.js'
+import { differenceFnWidgetChange } from './utils.js'
 import {
-  __WIDGET_INTRINSIC_KEYWORDS__,
   DomHelper,
   isContainerVNode,
-  isEffect,
   isWidgetVNode,
   type VNode,
   Widget,
@@ -13,49 +11,14 @@ import {
 import { HmrId } from './constant.js'
 
 /**
- * 更新组件实例的函数
- * @param node - 组件节点
- * @param module - 组件模块
- * @param change 变更代码对象，包含build和其他属性
- * @param isClass 是否为类组件的标志
- */
-function updateWidget(
-  node: WidgetVNode, // 新的组件实例
-  module: WidgetType, // 旧的组件实例
-  change: ChangeCode, // 变更代码对象，包含build和其他属性
-  isClass: boolean // 是否为类组件的标志
-): boolean {
-  // 如果change对象有build属性且没有other属性，则调用增量更新函数
-  if (change.build && !change.other) {
-    updateWidgetBuild(node, module, isClass)
-    return true
-  } else {
-    // 否则调用全量更新函数
-    return updateWidgetFull(node, module)
-  }
-}
-
-/**
  * 更新组件构建的函数
  * @param node
  * @param module
- * @param isClass 是否为类组件
  */
-function updateWidgetBuild(node: WidgetVNode, module: WidgetType, isClass: boolean): void {
-  const oldInstance = node.instance
+function updateWidgetBuild(node: WidgetVNode, module: WidgetType): void {
   // 更新组件实例
   node['updateModule'](module)
   const newInstance = node.instance
-  // 类组件恢复属性
-  if (isClass) {
-    // 恢复属性
-    for (const key in oldInstance) {
-      if (__WIDGET_INTRINSIC_KEYWORDS__.includes(key as any)) continue
-      const oldValue = (oldInstance as any)[key]
-      // 仅恢复非副作用属性
-      if (!isEffect(oldValue)) (newInstance as any)[key] = oldValue
-    }
-  }
   // 更新视图，仅在组件是活跃状态下更新！！！
   if (node.state === 'activated') newInstance.update()
 }
@@ -66,10 +29,8 @@ function updateWidgetBuild(node: WidgetVNode, module: WidgetType, isClass: boole
  * @param node
  * @param module
  */
-function updateWidgetFull(node: WidgetVNode, module: WidgetType): boolean {
+function updateWidgetInstance(node: WidgetVNode, module: WidgetType) {
   const oldInstance = node.instance
-  // 如果是非活跃状态则不更新js逻辑层与数据层的变化
-  if (node.state !== 'activated') return false
   // 创建占位元素，用于在更新过程中保持DOM结构稳定
   const placeholderEl: Text = document.createTextNode('')
   // 如果旧实例使用了传送功能（teleport）
@@ -88,7 +49,6 @@ function updateWidgetFull(node: WidgetVNode, module: WidgetType): boolean {
   node['updateModule'](module, true)
   // 重新挂载节点，新实例正式接管DOM
   node.mount(placeholderEl, 'replace')
-  return true
 }
 
 /**
@@ -119,30 +79,21 @@ function updateNodeModules(child: VNode) {
  */
 export default function handleHmrUpdate(vnode: WidgetVNode, newModule: WidgetType): boolean {
   try {
+    if (vnode.state !== 'activated') return false
     const oldModule = vnode.type
-    // 如果节点没有渲染，或节点已销毁，则跳过
-    if (['notRendered', 'unloaded', 'uninstalling'].includes(vnode.state)) {
-      return true
-    }
-    let change: ChangeCode
     const isClass = Widget.isClassWidget(vnode.type)
     if (isClass) {
-      // 恢复静态属性
-      for (const key of Object.keys(oldModule)) {
-        if (key in newModule) {
-          const descriptor = Object.getOwnPropertyDescriptor(newModule, key)
-          if (descriptor && descriptor.writable) {
-            Reflect.set(newModule, key, Reflect.get(oldModule, key))
-          }
-        }
-      }
-      change = differenceClassWidgetChange(newModule.toString(), oldModule.toString())
-      if (!change.other) vnode[HmrId.state] = {}
-    } else {
-      change = differenceFnWidgetChange(newModule.toString(), oldModule.toString())
+      updateWidgetInstance(vnode, newModule)
+      return true
     }
-    if (change.other) delete vnode[HmrId.state]
-    return updateWidget(vnode, newModule, change, isClass)
+    const change = differenceFnWidgetChange(newModule.toString(), oldModule.toString())
+    if (change.other) {
+      delete vnode[HmrId.state]
+      updateWidgetInstance(vnode, newModule)
+    } else {
+      updateWidgetBuild(vnode, newModule)
+    }
+    return true
   } catch (e) {
     console.error('[VitarxViteBundler]：热更新模块时捕获到异常', e)
     return true

@@ -10,51 +10,6 @@ interface SeparationResult {
   renderCode: string
 }
 
-// 提取类代码中的 `build` 方法
-function extractBuildMethod(classCode: string): string {
-  const buildMethodRegex = /build\s*\(\)\s*{([\s\S]*?)^}/gm
-  const match = buildMethodRegex.exec(classCode)
-  return match ? match[1].trim() : ''
-}
-
-// 提取类代码中除 `build` 方法之外的其他部分
-function extractOtherCode(classCode: string, buildMethod: string): string {
-  // 移除 `build` 方法后的其他部分
-  return classCode.replace(buildMethod, '').trim()
-}
-
-/**
- * 判断两个类组件的差异
- *
- * @param newCode
- * @param oldCode
- * @returns {ChangeCode}
- */
-export function differenceClassWidgetChange(newCode: string, oldCode: string): ChangeCode {
-  const change: ChangeCode = {
-    build: false,
-    other: false
-  }
-  // 提取新旧类的 `build` 方法
-  const newBuildMethod = extractBuildMethod(newCode)
-  const oldBuildMethod = extractBuildMethod(oldCode)
-
-  // 判断构建方法差异
-  if (newBuildMethod !== oldBuildMethod) {
-    change.build = true
-  }
-
-  // 提取除 `build` 方法外的其他代码部分
-  const newCodeWithoutBuild = extractOtherCode(newCode, newBuildMethod)
-  const oldCodeWithoutBuild = extractOtherCode(oldCode, oldBuildMethod)
-
-  // 判断逻辑代码差异
-  if (newCodeWithoutBuild !== oldCodeWithoutBuild) {
-    change.other = true
-  }
-  return change
-}
-
 /**
  * 分离逻辑代码和渲染代码
  *
